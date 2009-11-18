@@ -15,7 +15,7 @@ class OptimalCutter:
         self.minOpt = minOpt
 
         self.products={}
-        self.__productGroups={}
+        self.__productGroups=[]
         self.__readProductsFile()
 
         self.cuts=self.Cuts()
@@ -220,82 +220,147 @@ class OptimalCutter:
         return sheet.strip()
 
     def tallyWaste(self,assignments):
-        return sum([assignment.residual()
-                for k,assignment in assignments.items()
-                if assignment.product.group!=9999
-                ])
+        tot=0
+        for assignment in assignments:
+            for cutIdx in assignment[1:]:
+                tot+=self.__cuts[cutIdx][2]
+
+        return tot
 
     def wasteStats(self,assignments):
         #list residuals from all cut assignments
-        l=[assignment.residual()
-                for k,assignment
-                in assignments.items()
-                if assignment.product.group!=9999
-                ]
-        minWaste = min(l)
-        maxWaste = max(l)
-        meanWaste = sum(l)/len(l)
-        totalWaste = sum(l)
+        wasteList=[]
+        for assignment in assignments:
+            prodIdx=assignment[0]
+            residual=self.__products[prodIdx][1]
+            for cutIdx in assignment[1:]:
+                residual -= self.__cuts[cutIdx][2]
+            wasteList.append(residual)
+
+        minWaste = min(wasteList)
+        maxWaste = max(wasteList)
+        meanWaste = sum(wasteList)/len(wasteList)
+        totalWaste = sum(wasteList)
         return minWaste,maxWaste,meanWaste,totalWaste
 
-    def _getProdOpt(self,prodGroup,minLen):
+    def _getProdOpt(self,prodGroupKey,minLen):
         """
-        Return the ID of a product in product group prod which
+        Return a random product from the group at array index prodIdx that
             is longer than minLen
         """
         #print self.__productGroups
         while 1:
             try:
-                prod = random.choice(self.__productGroups[prodGroup])
+                prodIdx = random.choice(self.__productGroups[prodGroupKey])
             except IndexError:
                 #print 'No options for product (%s)' % prod
                 #Unknown product group
-                return self.products[9999]
+                return self.__productGroups[prodGroupKey][0]
 
             # if the random selection is of sufficient length, return
             #   otherwise try again
-            if prod.length>=minLen: break
+            prodLength=self.__products[prodIdx][1]
+            if prodLength>=minLen: break
 
-        return prod
+        return prodIdx
+
+    def _assignmentLength(self,assignment):
+        gross=0
+        for cutIdx in assignment[1:]:
+            gross+=self.__cuts[cutIdx][2]
+        return gross
 
     def _assignCuts(self):
-        cutAssignments={}
-        assignmentId=0
+        cutAssignments=[]
         c=0
-        for prodGroup,cuts in self.__cutGroups.items():
-            cutIdx=range(0,len(cuts))
-            testIdx=cutIdx[:]
+        for prodGroupIdx in range(len(self.__cutsGrouped)):
+            #get the list of cut indices
 
-            i=random.choice(testIdx)
-            cut=cuts[i]
+            unassignedCuts=self.__cutsGrouped[prodGroupIdx][:]
+            testCuts=unassignedCuts[:]
 
-            product = self._getProdOpt(prodGroup,cut.length)
-            assignment=self.Assignment(assignmentId,product)
+            #print 'groupIdx',prodGroupIdx,len(testCuts),self.products[self.__products[self.__productGroups[prodGroupIdx][0]][0]].description
+##            print 'groupIdx',
+##            print prodGroupIdx,
+##            print self.__productGroupKeys[prodGroupIdx],
+##            print self.products[self.__productGroupKeys[prodGroupIdx]].description,
+##            print len(testCuts)
 
-            while 1:
-                try:
-                    assignment.append(cut)
-                    c+=1
-                    cutIdx.remove(i)
-                    #if all cuts have been assigned, break
-                    if len(cutIdx)==0:break
+            if testCuts==[]: continue
 
-                except:
-                    pass
+            #get a random cut and its __cuts array index
+            testIdx=random.choice(range(len(testCuts)))
+            cutIdx=testCuts[testIdx]
+            cut=self.__cuts[cutIdx]
+            cutLen=cut[2]
 
-                testIdx.remove(i)
+            #prodGroupIdx=self.__cutsGrouped[i][0]
+            prodIdx = self._getProdOpt(prodGroupIdx,cutLen)
+            prodLen=self.__products[prodIdx][1]
 
-                if len(testIdx)==0:
-                    #reset the test indexes to the unassigned cuts
-                    testIdx=cutIdx[:]
-                    #create a new assignment object
-                    assignmentId+=1
-                    product = self._getProdOpt(prodGroup,cut.length)
-                    assignment=self.Assignment(assignmentId,product)
-                    cutAssignments[assignmentId]=assignment
+            assignment=[prodIdx,]
 
-                i=random.choice(testIdx)
-                cut = cuts[i]
+            while len(unassignedCuts):
+                #remove the index from the test list
+                testCuts.pop(testIdx)
+                if self._assignmentLength(assignment) + cutLen <= prodLen:
+                    #cut fits in the current product, so add it
+                    assignment.append(cutIdx)
+                    unassignedCuts.remove(cutIdx)
+
+                if not len(testCuts):
+##                if testCuts==[]:
+##                    pass
+##                else:
+                    if unassignedCuts==[]:
+                        #that was the last cut in the group to assign
+                        #print 'Finished %d' % prodGroupIdx
+                        break
+                    #no more cuts to test
+                    #start a new assignment
+                    cutAssignments.append(assignment)
+                    testCuts=unassignedCuts[:]
+                    assignment=[prodIdx,]
+
+                    testIdx=random.choice(range(len(testCuts)))
+                    cutIdx=testCuts[testIdx]
+                    cut=self.__cuts[cutIdx]
+                    cutLen=cut[2]
+
+                    prodIdx = self._getProdOpt(prodGroupIdx,cutLen)
+                    prodLen=self.__products[prodIdx][1]
+
+                    continue
+
+                testIdx=random.choice(range(len(testCuts)))
+                cutIdx=testCuts[testIdx]
+                cut=self.__cuts[cutIdx]
+                cutLen=cut[2]
+
+
+##                try:
+##                    assignment.append(cut)
+##                    c+=1
+##                    cutIdx.remove(i)
+##                    #if all cuts have been assigned, break
+##                    if len(cutIdx)==0:break
+##
+##                except:
+##                    pass
+##
+##                testIdx.remove(i)
+##
+##                if len(testIdx)==0:
+##                    #reset the test indexes to the unassigned cuts
+##                    testIdx=cutIdx[:]
+##                    #create a new assignment object
+##                    assignmentId+=1
+##                    product = self._getProdOpt(prodGroup,cut.length)
+##                    assignment=self.Assignment(assignmentId,product)
+##                    cutAssignments[assignmentId]=assignment
+##
+##                i=random.choice(testIdx)
+##                cut = cuts[i]
 
         #print c
         return cutAssignments
@@ -388,42 +453,44 @@ class OptimalCutter:
             #create a new product object
             product=self.Product(id,group,description,length,cost)
             #instantiate the group if it hasn't been already
-            if not self.__productGroups.has_key(group):
-                self.__productGroups[group]=[]
+##            if not self.__productGroups.has_key(group):
+##                self.__productGroups[group]=[]
             #add the product to the main list and it's group list
             self.products[id]=product
-            self.__productGroups[group].append(product)
+##            self.__productGroups[group].append(product)
 
         #Add an 'unkown' product group
         product = self.Product(9999,9999,'Unknown',9e10,0)
         self.products[9999]=product
-        self.__productGroups[9999]=[product,]
+##        self.__productGroups[9999]=[product,]
+
+        #
+        #product keys array
+        self.__productsKeys=self.products.keys()
+
+        #product groups array
+        s=set()
+        for p in self.products.values():
+            s.add(p.group)
+        self.__productGroupKeys=list(s)
+        #self.__productGroupKeys.reverse()
+
+        self.__products=[]
+        for g in self.__productGroupKeys:
+            self.__productGroups.append([])
 
         #products array
         self.__products=[]
-        prodKeys=self.products.keys()
-        for i in range(len(prodKeys)):
-            p=self.products[prodKeys[i]]
-            self.__products.append([prodKeys[i],p.group,p.length,p.cost])
+        for i in range(len(self.__productsKeys)):
+            p=self.products[self.__productsKeys[i]]
+            groupIdx=self.__productGroupKeys.index(p.group)
+            self.__products.append([groupIdx,p.length,p.cost])
 
-        #product group array
-        self.__prodGroups=[]
+        for i in range(len(self.__products)):
+            groupIdx=self.__products[i][0]
+            self.__productGroups[groupIdx].append(i)
 
         return True
-
-##        products = {}
-##
-##        for l in lines[1:]:
-##            x = l.split(',')
-##            id = int(x[0])
-##            prod = x[1].strip()
-##            length = float(x[2])
-##            cost = float(x[3])
-##            products[id] = (prod,length,cost)
-##
-##        products[9999] = ('Unknown',9e10,0)
-##
-##        return products
 
     def __readCutsFile(self):
         ##TODO: warn if product/length not in products
@@ -450,15 +517,39 @@ class OptimalCutter:
                     pieceDesc,prodGroup,prodDesc,cutLength,
                     self.trim)
 
-            #group cuts by product type
-            if not prodGroup in self.__cutGroups.keys():
-                self.__cutGroups[prodGroup]=[]
-            self.__cutGroups[prodGroup].append(cut)
+##            #group cuts by product type
+##            if not prodGroup in self.__cutGroups.keys():
+##                self.__cutGroups[prodGroup]=[]
+##            self.__cutGroups[prodGroup].append(cut)
 
             #add the cut to the cuts object
             self.cuts[cutId]=cut
 
             i+=1
+
+        #cuts keys array
+        self.__cutsKeys=self.cuts.keys()
+
+        #cuts grouped by product type
+        self.__cutsGrouped=[]
+        for g in self.__productGroupKeys:
+            self.__cutsGrouped.append([])
+
+        #cuts array
+        self.__cuts=[]
+        for i in range(len(self.__cutsKeys)):
+            cut = self.cuts[self.__cutsKeys[i]]
+            prod=cut.productGroup
+            prodGroupIdx=self.__productGroupKeys.index(prod)
+            self.__cuts.append([prodGroupIdx,cut.length,cut.grossLength()])
+            self.__cutsGrouped[prodGroupIdx].append(i)
+
+
+##        for i in range(len(self.__cutsGrouped)):
+##            g=self.__prodGroups[i]
+##            grp=self.__productGroups[g]
+##            desc=grp[0].description
+##            print desc,self.__cutsGrouped[i]
 
         print "Read %d cuts" % i
         return True
@@ -494,7 +585,7 @@ class OptimalCutter:
             Add a cut to the assignment list
             """
             if self.sumCutLength() + cut.grossLength() > self.product.length:
-                raise "Gross Length Error"
+                raise ValueError("Gross length would exceed product length")
                 #return False
 
             ##TODO: is there a better way to overide append
@@ -580,23 +671,32 @@ class OptimalCutter:
             return s
 
 if __name__=='__main__':
+    import cProfile
+
     #cutter=OptimalCutter(maxTemp=1000,minTemp=1,alpha=.95,reps=200)
-    cutter=OptimalCutter(maxTemp=1000,minTemp=5,alpha=.95,reps=250,trim=1.0)
-    #cuts = cutter.readCutsFile('cuts.lst')
-    #products = cutter.readProductsFile('products.lst')
-    cutter.main()
+    cutter=OptimalCutter(maxTemp=1000,minTemp=100,alpha=.8,reps=50,trim=1.0)
+
+    cProfile.run('cutter.main()','profile.txt')
+    #cutter.main()
 
     #import pprint
     #pprint.pprint(cutter.bestSolution)
     #print cutter.cutSheet(cutter.bestSolution)
     print cutter.wasteStats(cutter.bestSolution),cutter.repsCompleted
 
-    order = cutter.orderSummary(cutter.bestSolution)
-    f = open('order.txt','w')
-    f.write(order)
-    f.close()
+##    order = cutter.orderSummary(cutter.bestSolution)
+##    f = open('order.txt','w')
+##    f.write(order)
+##    f.close()
+##
+##    cuts=cutter.cutSheet(cutter.bestSolution)
+##    f = open('cutsheet.txt','w')
+##    f.write(cuts)
+##    f.close()
 
-    cuts=cutter.cutSheet(cutter.bestSolution)
-    f = open('cutsheet.txt','w')
-    f.write(cuts)
-    f.close()
+    import pstats
+    s=pstats.Stats('profile.txt')
+    s=s.strip_dirs()
+    s.sort_stats('cumulative')
+    s.print_stats()
+    s.dump_stats('stats.txt')
