@@ -1,4 +1,5 @@
-import random,math
+import math
+from numpy import random
 
 class OptimalCutter:
     def __init__(self,cutsFile='cuts.lst',
@@ -21,6 +22,8 @@ class OptimalCutter:
         self.cuts=self.Cuts()
         self.__cutGroups = {}
         self.__readCutsFile()
+
+        self.random=self.__getRandom()
 
         #self.maxTemp = 100000*len(self.cuts)**-1
         #self.minTemp = .0001*self.maxTemp
@@ -46,6 +49,22 @@ class OptimalCutter:
 ##    def _readCutsFile(self):
 ##        self.cuts = self.__readCutsFile(self.cutsFileName)
 
+    def __getRandom(self):
+        while 1:
+            rand=random.random(1000000)
+            for r in rand:
+                yield r
+
+##        i=0
+##        while 1:
+##            try:
+##                yield rand[i]
+##            except:
+##                rand=[random.random() for i in range(10000)]
+##                i=0
+##                yield rand[i]
+##            i+=1
+
     def main(self):
         #self.__productGroups = self.__groupProducts()
         assignments = self._assignCuts()
@@ -59,8 +78,9 @@ class OptimalCutter:
         #anneal.write('Temp,Best,Current,Test,Prob.,Rand,NonOptimal\n')
         i=0
         anneal.write('Temp       Best     Current  Test     Prob   Rand   Kept\n')
-        while self.temp>=self.minTemp:
-            print self.temp
+        #while self.temp>=self.minTemp:
+        while i<10000:
+            print '%-9.4f %-8.2f' % (self.temp,self.bestDelta)
             for x in range(self.tempReps):
                 assignments = self._assignCuts()
                 ##TODO: generalize tallyWaste to be a delta calculation for each minOpt
@@ -83,19 +103,19 @@ class OptimalCutter:
                     #print msg
                     anneal.write(msg)
 
-                else:
-                    p=self.__getProbability(self.currentDelta,delta)
-                    r = random.random()
-                    if p>r:
-                        msg='%-10.4f %-8.2f %-8.2f %-8.2f %-5.4f %-5.4f +\n' % (
-                                self.temp,self.bestDelta,
-                                self.currentDelta,delta,p,r
-                                )
-                        #print msg
-                        anneal.write(msg)
-                        self.currentSolution = assignments
-                        self.currentDelta = delta
-                        self.keptDeltas.append(delta)
+##                else:
+##                    p=self.__getProbability(self.currentDelta,delta)
+##                    r = self.random.next()
+##                    if p>r:
+##                        msg='%-10.4f %-8.2f %-8.2f %-8.2f %-5.4f %-5.4f +\n' % (
+##                                self.temp,self.bestDelta,
+##                                self.currentDelta,delta,p,r
+##                                )
+##                        #print msg
+##                        anneal.write(msg)
+##                        self.currentSolution = assignments
+##                        self.currentDelta = delta
+##                        self.keptDeltas.append(delta)
 
                     #else:
                         #anneal.write('%.6f\t%.2f\t%.2f\t%.2f\t%.4f\t%.4f\t-\n' % (self.temp,self.bestDelta,self.currentDelta,delta,p,r))
@@ -123,11 +143,11 @@ class OptimalCutter:
             print test,base,self.temp,x
             raise
 
-    def orderSummary(self,assignments):
+    def orderSummary(self,cutAssignments):
         orderSheet=''
 
         productItems={}
-        cutAssignments = assignments.values()
+        #cutAssignments = assignments.values()
 
         #tally the quantity of each product
         for assignment in cutAssignments:
@@ -174,8 +194,8 @@ class OptimalCutter:
         if item2.id>item1.id: return -1
         return 0
 
-    def cutSheet(self,assignments):
-        cutAssignments = assignments.values()
+    def cutSheet(self,cutAssignments):
+        #cutAssignments = assignments.values()
         cutAssignments.sort(cmp=self.idSort)
 
         cutCount=0
@@ -188,7 +208,7 @@ class OptimalCutter:
             product = assignment.product
             desc = product.description
             length = product.length
-            waste = assignment.residual()
+            waste = assignment.residual
             if assignment.product.group==9999:
                 length = 0
                 waste = 0
@@ -220,16 +240,16 @@ class OptimalCutter:
         return sheet.strip()
 
     def tallyWaste(self,assignments):
-        return sum([assignment.residual()
-                for k,assignment in assignments.items()
+        return sum([assignment.residual
+                for assignment in assignments
                 if assignment.product.group!=9999
                 ])
 
     def wasteStats(self,assignments):
         #list residuals from all cut assignments
-        l=[assignment.residual()
-                for k,assignment
-                in assignments.items()
+        l=[assignment.residual
+                for assignment
+                in assignments
                 if assignment.product.group!=9999
                 ]
         minWaste = min(l)
@@ -246,7 +266,9 @@ class OptimalCutter:
         #print self.__productGroups
         while 1:
             try:
-                prod = random.choice(self.__productGroups[prodGroup])
+                r=int(self.random.next() * len(self.__productGroups[prodGroup]))
+                #prod = random.choice(self.__productGroups[prodGroup])
+                prod = self.__productGroups[prodGroup][r]
             except IndexError:
                 #print 'No options for product (%s)' % prod
                 #Unknown product group
@@ -259,45 +281,61 @@ class OptimalCutter:
         return prod
 
     def _assignCuts(self):
-        cutAssignments={}
+        cutAssignments=[]
         assignmentId=0
         c=0
+        g=0
         for prodGroup,cuts in self.__cutGroups.items():
+            g+=1
             cutIdx=range(0,len(cuts))
             testIdx=cutIdx[:]
 
-            i=random.choice(testIdx)
-            cut=cuts[i]
+            idx=testIdx.pop(0)
+            cut=cuts[idx]
 
+            #get random option from the product group
             product = self._getProdOpt(prodGroup,cut.length)
-            assignment=self.Assignment(assignmentId,product)
 
+            #instantiate an assignment
+            assignment=self.Assignment(len(cutAssignments)-1,product)
+
+            #sequentially attempt to add each cut to the assignment
             while 1:
-                try:
-                    assignment.append(cut)
+                if assignment.addCut(cut):
+                    #cut fits within the product option, remove it from the cutIdx list
                     c+=1
-                    cutIdx.remove(i)
+                    cutIdx.remove(idx)
+
                     #if all cuts have been assigned, break
-                    if len(cutIdx)==0:break
+                    if len(cutIdx)==0:
+                        #add the assignment to the completed list
+                        cutAssignments.append(assignment)
+                        break
 
-                except:
-                    pass
-
-                testIdx.remove(i)
-
+                #if all remaining cuts have been tested, start a new assignment
                 if len(testIdx)==0:
+                    cutAssignments.append(assignment)
+
                     #reset the test indexes to the unassigned cuts
                     testIdx=cutIdx[:]
+
                     #create a new assignment object
-                    assignmentId+=1
                     product = self._getProdOpt(prodGroup,cut.length)
-                    assignment=self.Assignment(assignmentId,product)
-                    cutAssignments[assignmentId]=assignment
+                    assignment=self.Assignment(len(cutAssignments)-1,product)
 
-                i=random.choice(testIdx)
-                cut = cuts[i]
 
-        #print c
+
+                idx=testIdx.pop(0)
+                cut = cuts[idx]
+
+##        print g,c
+##        #print c,g
+##        x=0
+##        for a in cutAssignments:
+##            for c in a:
+##                x+=1
+##        print x
+##
         return cutAssignments
 
     def x_assignCuts(self):
@@ -328,7 +366,7 @@ class OptimalCutter:
             #iteratively add cuts to the assignment until the residual
             #  length is less than all remaining cuts
             while 1:
-                if assignment.residual() - cutLen >= 0:
+                if assignment.residual - cutLen >= 0:
                     #the current cut fits so add it to the assignment
                     if not assignmentId in cutAssignments.keys():
                         cutAssignments[assignmentId]=assignment
@@ -453,58 +491,25 @@ class OptimalCutter:
         print "Read %d cuts" % i
         return True
 
-##    def __groupProducts(self):
-##        prodGroups = {}
-##        for prod in self.__cutGroups.keys():
-##            prodIds = [id for id,v in self.products.items() if v[0]==prod]
-##            prodGroups[prod]=prodIds
-##        return prodGroups
-
-##    def __groupCuts(self):
-##        """
-##        Aggregate cuts by product
-##        """
-##        #list the cut ids by product type
-##        #(prodType:[cutId1,cutId2,...],...}
-##        productCuts={}
-##        for k,c in self.cuts.items():
-##            if not c.productGroup in productCuts.keys():
-##                productCuts[c.productGroup] = []
-##            productCuts[c.productGroup].append(k)
-##
-##        return productCuts
-
     class Assignment(list):
         def __init__(self,id,product):
             self.id = id
             self.product = product
+            self.cumulativeLength=0
+            self.residual=self.product.length
 
-        def append(self,cut):
+        def addCut(self,cut):
             """
             Add a cut to the assignment list
             """
-            if self.sumCutLength() + cut.grossLength() > self.product.length:
-                raise "Gross Length Error"
-                #return False
-
-            ##TODO: is there a better way to overide append
-            self.extend([cut])
-
-        def residual(self):
-            """
-            Return the difference between assigned cuts and product length
-            """
-            return self.product.length - self.sumCutLength()
-
-        def sumCutLength(self):
-            """
-            Total the length of all assigned cuts
-            """
-            totCut=0
-            for c in self:
-                totCut+=c.grossLength()
-
-            return totCut
+            if self.cumulativeLength + cut.grossLength() <= self.product.length:
+                ##TODO: is there a better way to overide append
+                self.cumulativeLength+=cut.grossLength()
+                self.residual=self.product.length-self.cumulativeLength
+                self.extend([cut,])
+                return True
+            else:
+                return False
 
     class Product:
         def __init__(self,id,group,description,length,price):
@@ -570,10 +575,12 @@ class OptimalCutter:
             return s
 
 if __name__=='__main__':
-    #cutter=OptimalCutter(maxTemp=1000,minTemp=1,alpha=.95,reps=200)
-    cutter=OptimalCutter(maxTemp=100,minTemp=10,alpha=.8,reps=50)
-    #cuts = cutter.readCutsFile('cuts.lst')
-    #products = cutter.readProductsFile('products.lst')
+    #import cProfile
+
+    cutter=OptimalCutter(maxTemp=10000,minTemp=1000,alpha=.95,reps=500)
+    #cutter=OptimalCutter(maxTemp=1000,minTemp=100,alpha=.8,reps=50)
+
+    #cProfile.run('cutter.main()','profile.txt')
     cutter.main()
 
     #import pprint
@@ -590,3 +597,15 @@ if __name__=='__main__':
     f = open('cutsheet.txt','w')
     f.write(cuts)
     f.close()
+
+##    import pstats
+##    s=pstats.Stats('profile.txt')
+##    s=s.strip_dirs()
+##    s.sort_stats('cumulative')
+##    s.print_stats()
+##    #s.dump_stats('stats.txt')
+##    f = open('stats.txt','wb')
+##    import sys
+##    sys.stdout=f
+##    s.print_stats()
+##    f.close()
