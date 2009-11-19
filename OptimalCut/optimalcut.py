@@ -34,7 +34,7 @@ class OptimalCutter:
         self.tempReps = reps
         self.goal = self.cuts.totalLength()
 
-        print self.minTemp,self.maxTemp,self.tempReps
+        print self.minTemp,self.maxTemp,self.tempReps, self.goal
 
         self.temp = self.maxTemp
 
@@ -86,7 +86,7 @@ class OptimalCutter:
                 testSolution = self._assignCuts(testAssignments)
                 ##TODO: generalize tallyWaste to be a delta calculation for each minOpt
                 delta = self.tallyWaste(testSolution)
-                if delta<self.currentDelta:
+                if delta<=self.currentDelta:
                 ##TODO: the goal is the total length of all cuts
                 #if waste<self.temp:
                 ##!Threshold acceptance method
@@ -140,10 +140,12 @@ class OptimalCutter:
         dTest = test - self.goal
         dBase = base - self.goal
         x=-(dTest-dBase)/self.temp
-        try:return math.exp(x)
-        except:
-            print test,base,self.temp,x
-            raise
+        return math.exp(x)
+
+##        try:return math.exp(x)
+##        except:
+##            print test,base,self.temp,x
+##            raise
 
     def orderSummary(self,cutAssignments):
         orderSheet=''
@@ -283,14 +285,26 @@ class OptimalCutter:
         return prod
 
     def splitAssignments(self,baseAssignments):
+
         #randomly slice the current assignments
-        #j = random.randint(0,len(baseAssignments),1)
-        j=len(baseAssignments)/10
+        l=0
+        r=len(baseAssignments)
+        m=(r-l)/2
+        s=r/6
+        j = random.randint(0,s,1)
+
+        l=m-j
+        r=m+10-j
+
+        cutAssignments=baseAssignments[0:l]
+        cutAssignments.extend(baseAssignments[r:])
+
+        #j=len(baseAssignments)/10
         #j=int(round(len(baseAssignments) * self.random.next(),0))
-        cutAssignments=baseAssignments[j:]
+        #cutAssignments=baseAssignments[j:]
 
         leftovers = []
-        for assignment in baseAssignments[:j]:
+        for assignment in baseAssignments[l:r]:
             leftovers.extend(assignment)
 
         #group one side of the slice by product group
@@ -345,8 +359,13 @@ class OptimalCutter:
                         cutAssignments.append(assignment)
                         break
 
+                r=len(testIdx)
+                minCut=9e10
+                if r!=0:
+                    minCut=min([cuts[i].grossLength() for i in testIdx])
+
                 #if all remaining cuts have been tested, start a new assignment
-                if len(testIdx)==0:
+                if minCut>assignment.residual or r==0:
                     if len(assignment)>0:
                         #sometimes an assignment will be empty when no cuts fit the selected product option
                         cutAssignments.append(assignment)
@@ -461,10 +480,9 @@ class OptimalCutter:
             Add a cut to the assignment list
             """
             if self.cumulativeLength + cut.grossLength() <= self.product.length:
-                ##TODO: is there a better way to overide append
                 self.cumulativeLength+=cut.grossLength()
                 self.residual=self.product.length-self.cumulativeLength
-                self.extend([cut,])
+                self.append(cut)
                 return True
             else:
                 return False
@@ -536,7 +554,7 @@ if __name__=='__main__':
     import cProfile
 
     #cutter=OptimalCutter(maxTemp=10000,minTemp=1000,alpha=.95,reps=500)
-    cutter=OptimalCutter(maxTemp=100,minTemp=10,alpha=.8,reps=50)
+    cutter=OptimalCutter(maxTemp=500,minTemp=10,alpha=.9,reps=300)
 
     cProfile.run('cutter.main()','profile.txt')
     #cutter.main()
@@ -562,8 +580,8 @@ if __name__=='__main__':
     s.sort_stats('cumulative')
     s.print_stats()
     #s.dump_stats('stats.txt')
-    f = open('stats.txt','wb')
-    import sys
-    sys.stdout=f
-    s.print_stats()
-    f.close()
+##    f = open('stats.txt','wb')
+##    import sys
+##    sys.stdout=f
+##    s.print_stats()
+##    f.close()
