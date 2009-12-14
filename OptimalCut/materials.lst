@@ -1,4 +1,4 @@
-Id,TypeId,Material,Length,Cost
+Id,MaterialGroup,Material,Length,Cost
 1,1,H-1x5,72,10.92
 2,1,H-1x5,96,14.53
 3,1,H-1x5,120,18.16

@@ -60,7 +60,7 @@ class OptimalCutter:
         i=0
         anneal.write('Temp       Best     Current  Test     Prob   Rand   Kept\n')
         while self.temp>=self.minTemp:
-            print self.temp
+            print self.temp,self.bestDelta,self.currentDelta
             for x in range(self.tempReps):
                 assignments = self._assignCuts()
                 ##TODO: generalize tallyWaste to be a delta calculation for each minOpt
@@ -684,15 +684,15 @@ if __name__=='__main__':
     #print cutter.cutSheet(cutter.bestSolution)
     print cutter.wasteStats(cutter.bestSolution),cutter.repsCompleted
 
-##    order = cutter.orderSummary(cutter.bestSolution)
-##    f = open('order.txt','w')
-##    f.write(order)
-##    f.close()
-##
-##    cuts=cutter.cutSheet(cutter.bestSolution)
-##    f = open('cutsheet.txt','w')
-##    f.write(cuts)
-##    f.close()
+    order = cutter.orderSummary(cutter.bestSolution)
+    f = open('order.txt','w')
+    f.write(order)
+    f.close()
+
+    cuts=cutter.cutSheet(cutter.bestSolution)
+    f = open('cutsheet.txt','w')
+    f.write(cuts)
+    f.close()
 
     import pstats
     s=pstats.Stats('profile.txt')
