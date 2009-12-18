@@ -1,4 +1,8 @@
-import random
+import random,time
+
+l1Tot=0
+l2Tot=0
+l3Tot=0
 
 class Project:
     def __init__(self,cutsPath,materialsPath):
@@ -24,161 +28,107 @@ class Project:
                 l=m.length
                 c=m.cost
                 self.__materialsByMaterialGroup[mg].append([i,l,c])
-    
-    def xassignCuts(self,baseAssignments=None):
-        totalLength=0
-        totalCost=0
-        totalWaste=0
 
-        if baseAssignments==None:
-            cutGroups=self.__cutsByMaterialGroup
-            assignments=[]
-        else:
-            l=random.randint(0,len(baseAssignments))
-            assignments=baseAssignments[:l]
-            for matId,cuts in assignments:
-                totalLength+=self.materials[matId].length
-                totalCost+=self.materials[matId].cost
-                
-                residual=self.materials[matId].length
-                for cutId in cuts:
-                    residual-=self.cuts[cutId].totalLength()
-                
-                totalWaste+=residual
+    def assignCuts(self,base=None):
+##        if base==None:
+        assignments={}
+        totWaste=0
+        totCost=0
+        cutsByMaterial=self.__cutsByMaterialGroup
+##        else:
+##            assignments={}
+##            cutsByMaterial={}
+##            for mg,assign in base.items():
+##                j=len(cuts)/2
+                 
+        for mg,materialLengths in self.__materialsByMaterialGroup.items():
+            #cutLengths=[l[1] for l in cutsByMaterial[mg]]
+            cutLengths=cutsByMaterial[mg]
+            materialLengths,materialCuts,waste,cost=self.pack(cutLengths,materialLengths)
+            totWaste+=waste
+            totCost+=cost
+            assignments[mg]=(materialLengths,materialCuts)
+
+        return assignments,totWaste,totCost
+    
+    def pack(self,cuts,materials):
+        """
+        cutLengths - list of cut lengths
+        materials - list of tuples of materials (length,cost)
+        """
+        random.shuffle(materials)
+        cuts.sort(cmp=sortCuts,reverse=True)
+        materialAssignments=[(0,0.0,0.0)]*len(cuts)
+        #materialCosts=[0.0]*len(cuts)
+        materialResiduals=[0.0]*len(cuts)
+
+        m=materials[0] #random.choice(materials)
+        materialAssignments[0]=m
+        materialResiduals[0]=m[1]
+        materialCuts=[[None]*10]*len(cuts)
+        cutCounts=[0]*len(cuts)
+        materialIndex=0
+
+        totCutLen=0.0
+        totMaterLen=m[1]
+        totCost=m[2]
+        
+        #global l1Tot,l2Tot,l3Tot
+        
+        #l1Enter=time.clock()
+        for cut in cuts:
+            cutLen=cut[1]
             
-            cutGroups={}
-            for matId,cuts in baseAssignments[l:]:
-                g=self.materials[matId].materialgroup
-                if not cutGroups.has_key(g):
-                    cutGroups[g]=[]
-                for cutId in cuts:
-                    if cutId!=-1:
-                        l=self.cuts[cutId].totalLength()
-                        cutGroups[g].append((cutId,l))
+            fit=False
+            
+            #l2Enter=time.clock()
+            ##TODO: test for minimum cut length first to avoid this loop if it's of no use
+            #try to fit the cut in the current assignments
+            for i in xrange(materialIndex+1): #len(materialResiduals)):
+                if cutLen<=materialResiduals[i]:
+                    try:
+                        materialCuts[i][cutCounts[i]-1]=cut
+                    except:
+                        materialCuts[i].append(cut)
+                    materialResiduals[i]-=cutLen
+                    cutCounts[i]+=1
+                    fit=True
+                    totCutLen+=cutLen
+                    break
+            #l2Tot+=time.clock()-l2Enter
+            
+            #the cut doesn't fit in the current material options, add another
+            if not fit:
                 
-        #print cutGroups
-                
-        for matGrp,cuts in cutGroups.items():
-            cuts=cuts[:]
-            assignment=[-1,[-1]*5]
-            ai=0
-
-            matId,matLen,matCost=random.choice(self.__materialsByMaterialGroup[matGrp])
-            residLen=matLen
-            #random.shuffle(cuts)
-            while 1:
-                for c in xrange(len(cuts)-1,-1,-1):
-                    cutId,cutLen=cuts[c]
-                    if cutLen<=residLen:
-                        if assignment[0]==-1:
-                            assignment[0]=matId
-                            totalLength+=matLen
-                            totalCost+=matCost
-                        
-                        try:
-                            assignment[1][ai]=cutId
+                #l3Enter=time.clock()
+                for m in materials:
+                    #m=random.choice(materials)
+                    if cutLen<=m[1]:
+                        try:materialAssignments[materialIndex+1]=m
                         except:
-                            assignment[1].append(cutId)
-                        residLen-=cutLen
-                        cuts.pop(c)
-                        ai+=1
-                
-                if assignment[0]!=-1:
-                    #print assignment
-                    assignments.append(assignment)
-                    totalWaste+=residLen
-                
-                if len(cuts)==0:
-                    break
-                
-                assignment=[-1,[-1]*5]
-                ai=0
-                matId,matLen,matCost=random.choice(self.__materialsByMaterialGroup[matGrp])
-                residLen=matLen
-                #random.shuffle(cuts)                    
-                
-        return assignments,totalLength,totalWaste,totalCost
-    
-    def _tallyCosts(self,assignments):
-        materialCost=0
-        materialLength=0
-        cutLength=0
-        for materialId,cuts in assignments:
-            material=self.materials[materialId]
-            materialCost+=material.cost
-            materialLength+=material.length
-            for cutId in cuts:
-                cutLength+=self.cuts[cutId].totalLength()
+                            #print len(materialAssignments)
+                            #print materialIndex
+                            #print materialAssignments
+                            raise
+                        materialResiduals[materialIndex+1]=m[0]-cutLen
+                        materialCuts[materialIndex+1]=[cut,] + [None]*9
+                        cutCounts[materialIndex+1]=0
+                        materialIndex+=1
+                        totCutLen+=cutLen
+                        totMaterLen+=m[1]
+                        totCost+=m[2]
+                        break
+                #l3Tot+=time.clock()-l3Enter
         
-        return materialCost,materialLength,materialLength-cutLength,cutLength
+        #l1Tot+=time.clock()-l1Enter
         
-    def assignCuts(self,baseAssignments=None):
-        totalCost=0.0
-        totalLength=0.0
-        totalWaste=0.0
-        
-        if baseAssignments!=None:
-            l=len(baseAssignments)/2
-            assignments=baseAssignments[:l]
-            for matId,cuts in assignments:
-                totalLength+=self.materials[matId].length
-                totalCost+=self.materials[matId].cost
-                totalWaste+=self.materials[matId].length
-                for cut in cuts:
-                    if cut==-1:continue
-                    totalWaste-=self.cuts[cut].totalLength()
-                    
-            cutsGrouped={}
-            for assignment in baseAssignments[l:]:
-                m=assignment[0]
-                g=self.materials[m].materialGroup
-                if not cutsGrouped.has_key(g):
-                    cutsGrouped[g]=[]
-                for cut in assignment[1]:
-                    if cut==-1: continue
-                    l=self.cuts[cut].totalLength()
-                    cutsGrouped[g].append((cut,l))
-        
-        else:
-            cutsGrouped=self.__cutsByMaterialGroup
-            assignments=[]
-        
-        for mg,cuts in cutsGrouped.items():
-            materialOptions=self.__materialsByMaterialGroup[mg]
-            cuts=cuts[:]
-            testCuts=cuts[:]
-            random.shuffle(testCuts)
-            materialIndex,residualLength,cost=random.choice(materialOptions)
-            while 1:
-                assignment=[-1,[]]
-                ai=0
-                for cut in testCuts:
-                    if cut[1]<=residualLength:
-                        
-                        if assignment[0]==-1:
-                            assignment[0]=materialIndex
-                            totalCost+=cost
-                            totalLength+=residualLength
-                            
-                        residualLength-=cut[1]
-                        assignment[1].append(cut[0])
-                        ai+=1
-                        
-                        cuts.remove(cut)
-                
-                if assignment[0]!=-1:
-                    totalWaste+=residualLength
-                    assignments.append(assignment)
-                    #print assignment
+        #cost=sum([m[2] for m in materialAssignments])
 
-                if len(cuts)==0:
-                    break
-                
-                testCuts=cuts[:]
-                materialIndex,residualLength,cost=random.choice(materialOptions)
-                
-        return assignments,totalLength,totalWaste,totalCost
-        
+        #totCuts=sum([sum([c[1] for c in cl if c!=None]) for cl in materialCuts if cl!=None])
+        waste=totMaterLen-totCutLen
+
+        return materialAssignments,materialCuts,waste,totCost
+    
 class Cuts(list):
     def __init__(self,cutsPath):
         f=open(cutsPath)
@@ -276,15 +226,22 @@ class Test:
         min=9e10
         assignments=None
         for i in xrange(self.iters):
-            assignments,length,waste,cost=self.func(assignments)
+            assignments,waste,cost=self.func(assignments)
             if cost<=min:
                 min=cost
                 ba=assignments
-                bl=length
                 bw=waste
         
-        print min,bl,bw
-        
+        print
+        print 'Minimum cost',min
+        print 'Minimum waste',bw
+        print
+
+def sortCuts(c1,c2):
+    if c1[1]>c2[1]:
+        return 1
+    return 0
+
 if __name__=='__main__':
     
     cutsPath=r'C:\Users\Tod\projects\uuc-ke7fxl\OptimalCut\cuts.lst'
@@ -296,18 +253,20 @@ if __name__=='__main__':
     
     test=Test(project.assignCuts,1000)
     
-    import time
-    st=time.clock()
-    test.run()
-    et=time.clock()
-    print et-st
+##    import time
+##    st=time.clock()
+##    test.run()
+##    et=time.clock()
+##    print et-st
     
-##    import cProfile
-##    cProfile.run('test.run()','profile.txt')
-##    
-##    import pstats
-##    s=pstats.Stats('profile.txt')
-##    s=s.strip_dirs()
-##    s.sort_stats('time')
-##    s.print_stats()
-##    s.dump_stats('stats.txt')
+    import cProfile
+    cProfile.run('test.run()','profile.txt')
+    
+    import pstats
+    s=pstats.Stats('profile.txt')
+    s=s.strip_dirs()
+    s.sort_stats('time')
+    s.print_stats()
+    s.dump_stats('stats.txt')
+    
+    #print l1Tot,l2Tot,l3Tot
