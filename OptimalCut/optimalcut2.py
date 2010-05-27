@@ -2,7 +2,7 @@ import random,math
 
 class OptimalCutter:
     def __init__(self,cutsFile='cuts.lst',
-            productsFile='products.lst',
+            productsFile='materials.lst',
             itemsFile='items.lst',
             trim=1.0,minOpt='waste',
             maxTemp=100,minTemp=.01,
@@ -101,7 +101,7 @@ class OptimalCutter:
                         #anneal.write('%.6f\t%.2f\t%.2f\t%.2f\t%.4f\t%.4f\t-\n' % (self.temp,self.bestDelta,self.currentDelta,delta,p,r))
                 i+=1
 
-            self.temp*=self.alpha
+            self.temp *= self.alpha
             #self.tempReps = int(self.tempReps*1.005)
 
         self.repsCompleted = i
