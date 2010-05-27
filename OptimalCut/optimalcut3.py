@@ -2,6 +2,9 @@ import numpy
 
 class Project:
     def __init__(self,materialsFile,cutsFile):
+        self.materialsFile=materialsFile
+        self.cutsFile=cutsFile
+
         self.materials=[] #list of all available materials
         self.materialTypes={} #list of materials indexes grouped by material type id
         self.materialTypeNames={} #material type names keyed to type id
@@ -10,8 +13,8 @@ class Project:
         self.jobCuts={} #cut indexes keyed to job id
         self.jobNames={} #job names keyed to job id
         
-        self._loadCuts(cutsFile)
-        self._loadMaterials(materialsFile)
+        self._readCuts(self.cutsFile)
+        self._readMaterials(self.materialsFile)
     
     def _missingMaterials(self):
         """
@@ -30,7 +33,7 @@ class Project:
         ll[4]=float(ll[4]) #cost
         return ll
         
-    def _loadMaterials(self,materialsPath):
+    def _readMaterials(self,materialsPath):
         materials=[]
         self.materialTypes={}
         self.materialTypeNames={}
@@ -66,7 +69,7 @@ class Project:
         ll[9]=bool(ll[9]) #include
         return ll
 
-    def _loadCuts(self,cutsPath='cuts.lst'):
+    def _readCuts(self,cutsPath='cuts.lst'):
         cuts=[]
         self.materialCuts={}
         self.jobCuts={}
@@ -106,5 +109,5 @@ class Project:
         #print self.jobNames.values()
     
 if __name__=='__main__':
-    project=Project('products.lst','cuts.lst',)
+    project=Project('materials.lst','cuts.lst',)
     

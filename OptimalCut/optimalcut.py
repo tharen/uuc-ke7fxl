@@ -3,7 +3,7 @@ from numpy import random
 
 class OptimalCutter:
     def __init__(self,cutsFile='cuts.lst',
-            productsFile='products.lst',
+            productsFile='materials.lst',
             itemsFile='items.lst',
             trim=1.0,minOpt='waste',
             maxTemp=100,minTemp=.01,
@@ -310,9 +310,7 @@ class OptimalCutter:
         #group one side of the slice by product group
         cutGroups={}
         for cut in leftovers:
-            if not cutGroups.has_key(cut.productGroup):
-                cutGroups[cut.productGroup]=[]
-            cutGroups[cut.productGroup].append(cut)
+            cutGroups.setdefault(cut.productGroup,[]).append(cut)
 
         return cutAssignments,cutGroups
 
@@ -323,9 +321,7 @@ class OptimalCutter:
             #group all cuts
             cutGroups={}
             for cut in self.cuts.values():
-                if not cutGroups.has_key(cut.productGroup):
-                    cutGroups[cut.productGroup]=[]
-                cutGroups[cut.productGroup].append(cut)
+                cutGroups.setdefault(cut.productGroup,[]).append(cut)
 
         else:
             cutAssignments,cutGroups=self.splitAssignments(baseAssignments)
@@ -480,8 +476,8 @@ class OptimalCutter:
             Add a cut to the assignment list
             """
             if self.cumulativeLength + cut.grossLength() <= self.product.length:
-                self.cumulativeLength+=cut.grossLength()
-                self.residual=self.product.length-self.cumulativeLength
+                self.cumulativeLength += cut.grossLength()
+                self.residual = self.product.length-self.cumulativeLength
                 self.append(cut)
                 return True
             else:
@@ -504,9 +500,7 @@ class OptimalCutter:
             pass
 
         def totalLength(self):
-            l=0
-            for k,c in self.items():
-                l+=c.length
+            l=sum([cut.grossLength() for cut in self.values()])
             return l
 
         def __str__(self):
@@ -554,7 +548,7 @@ if __name__=='__main__':
     import cProfile
 
     #cutter=OptimalCutter(maxTemp=10000,minTemp=1000,alpha=.95,reps=500)
-    cutter=OptimalCutter(maxTemp=500,minTemp=10,alpha=.9,reps=300)
+    cutter=OptimalCutter(maxTemp=100,minTemp=10,alpha=.9,reps=200)
 
     cProfile.run('cutter.main()','profile.txt')
     #cutter.main()
