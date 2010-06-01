@@ -31,14 +31,9 @@ class GuiThread:
 class ThreadedGUI:
     def __init__(self,root,ctlQ,drawQ,
             width,height,xScale=2.0,yScale=2.0,
-            padx=15,pady=15):
+            padx=15,pady=15,pointSize=6,lineWidth=2):
+        
         self.root=root
-        self.root.rowconfigure(0,weight=1)
-        self.root.columnconfigure(0,weight=1)
-        self.frame=tk.Frame(self.root)
-        self.frame.grid(sticky='nsew')
-        self.frame.grid_rowconfigure(0,weight=1)
-        self.frame.grid_columnconfigure(0,weight=1)
         self.ctlQ=ctlQ
         self.drawQ=drawQ
         self.xScale=xScale
@@ -47,22 +42,92 @@ class ThreadedGUI:
         self.height=height*self.yScale
         self.padx=padx
         self.pady=pady
+        self.pointSize=pointSize
+        self.lineWidth=lineWidth
+        
+        self.numCities = tk.IntVar()
+        self.startTemp = tk.DoubleVar()
+        self.endTemp = tk.DoubleVar()
+        self.alpha = tk.DoubleVar()
+        self.reps = tk.IntVar()
+        
+        self.root.rowconfigure(0,weight=1)
+        self.root.columnconfigure(1,weight=1)
+        self.frame=tk.Frame(self.root)
+        self.frame.grid(row=0,column=1,sticky='nsew')
+        self.frame.grid_rowconfigure(0,weight=1)
+        self.frame.grid_columnconfigure(0,weight=1)
+        
+        self.ctlFrame = tk.Frame(self.root)
+        self.ctlFrame.grid(row=0,column=0,sticky='nse')
+        self.ctlFrame.grid_rowconfigure(5,weight=1)
+        self.ctlFrame.grid_columnconfigure(0,weight=1)
+        
+        lblCityCount = tk.Label(self.ctlFrame,
+                text='Cities:',anchor='w')
+        lblCityCount.grid(row=0,column=0,sticky='new')
+        self.entCityCount = tk.Entry(self.ctlFrame,
+                textvariable=self.numCities,width=5)
+        self.entCityCount.grid(row=0,column=1,sticky='new')
+        
+        lblStartTemp = tk.Label(self.ctlFrame,text='Start Temp:',
+                anchor='w')
+        lblStartTemp.grid(row=1,column=0,sticky='new')
+        self.entStartTemp = tk.Entry(self.ctlFrame,
+                textvariable=self.startTemp,width=5)
+        self.entStartTemp.grid(row=1,column=1,sticky='sew')
+        
+        lblEndTemp = tk.Label(self.ctlFrame,text='End Temp:',
+                anchor='w')
+        lblEndTemp.grid(row=2,column=0,sticky='new')
+        self.entEndTemp = tk.Entry(self.ctlFrame,
+                textvariable=self.endTemp,width=5)
+        self.entEndTemp.grid(row=2,column=1,sticky='sew')
+
+        lblReps = tk.Label(self.ctlFrame,text='Reps:',
+                anchor='w')
+        lblReps.grid(row=3,column=0,sticky='new')
+        self.entReps = tk.Entry(self.ctlFrame,
+                textvariable=self.reps,width=5)
+        self.entReps.grid(row=3,column=1,sticky='sew')
+        
+        lblAlpha = tk.Label(self.ctlFrame,text='Alpha:',
+                anchor='w')
+        lblAlpha.grid(row=4,column=0,sticky='new')
+        self.Alpha = tk.Entry(self.ctlFrame,
+                textvariable=self.alpha,width=5)
+        self.Alpha.grid(row=4,column=1,sticky='sew')
+        
+        self.btnGo=tk.Button(self.ctlFrame,text='Go',
+                command=self.click_go)
+        self.btnGo.grid(row=5,column=0,
+                sticky='sew',columnspan=2)
+
+        self.btnPause=tk.Button(self.ctlFrame,text='Pause',
+                command=self.click_pause)
+        self.btnPause.grid(row=6,column=0,
+                sticky='sew',columnspan=2)
+
+        self.btnStep=tk.Button(self.ctlFrame,text='Step',
+                command=self.click_step)
+        self.btnStep.grid(row=7,column=0,
+                sticky='sew',columnspan=2)
+
+        self.btnStop=tk.Button(self.ctlFrame,text='Stop',
+                command=self.click_stop)
+        self.btnStop.grid(row=8,column=0,
+                sticky='sew',columnspan=2)
+        
         self.canvas=tk.Canvas(self.frame,
                 width=self.width+self.padx*2,
-                height=self.height+self.pady*2
+                height=self.height+self.pady*2,
                 )
         self.canvas.grid()
+        
         self.bottomFrame = tk.Frame(self.frame)
         self.bottomFrame.grid(row=1,column=0,sticky='sew')
-        self.bottomFrame.grid_columnconfigure(4,weight=1)
-        self.btnStep=tk.Button(self.bottomFrame,text='Step',command=self.click_step)
-        self.btnStep.grid(row=0,column=0)
-        self.btnGo=tk.Button(self.bottomFrame,text='Go',command=self.click_go)
-        self.btnGo.grid(row=0,column=1)
-        self.btnPause=tk.Button(self.bottomFrame,text='Pause',command=self.click_pause)
-        self.btnPause.grid(row=0,column=2)
-        self.btnStop=tk.Button(self.bottomFrame,text='Stop',command=self.click_stop)
-        self.btnStop.grid(row=0,column=3)
+        self.bottomFrame.grid_columnconfigure(4,weight=1)        
+        
         self.lblStatus=tk.Label(self.bottomFrame,width=25,anchor=tk.E)
         self.lblStatus.grid(row=0,column=4,sticky='sew')
 
@@ -95,6 +160,10 @@ class ThreadedGUI:
 
     def __drawRoutes(self,pntList,dist,msg,running,drawIDs=False):
         self.pntList=pntList
+        
+        lineWidth = self.lineWidth
+        pointSize = self.pointSize
+        
         if not running:
             status='%s (")' % msg
             self.lblStatus.configure(text=status)
@@ -114,7 +183,6 @@ class ThreadedGUI:
             #the last edge is [n-1] to [0], back home
             rteList.append((pntList[-1],pntList[0]))
 
-            pWidth=2
             self.canvas.delete(tk.ALL)
             i=0
             #draw each vertex and edge in the route
@@ -122,13 +190,14 @@ class ThreadedGUI:
                 self.canvas.create_line(
                         p1[0]*self.xScale+px,p1[1]*self.yScale+py,
                         p2[0]*self.xScale+px,p2[1]*self.yScale+py,
-                        fill="blue", dash=(4, 4)
+                        fill="blue", dash=(4, 4),
+                        width=lineWidth
                         )
                 item=self.canvas.create_oval(
-                        (p1[0]*self.xScale+px-pWidth/2,
-                        p1[1]*self.yScale+py-pWidth/2,
-                        p1[0]*self.xScale+px+pWidth/2,
-                        p1[1]*self.yScale+py+pWidth/2,),
+                        (p1[0]*self.xScale+px-pointSize/2,
+                        p1[1]*self.yScale+py-pointSize/2,
+                        p1[0]*self.xScale+px+pointSize/2,
+                        p1[1]*self.yScale+py+pointSize/2,),
                         fill='red',outline='red',
                         tags=str(i),
                         )
@@ -136,22 +205,24 @@ class ThreadedGUI:
                 #draw the point id
                 if drawIDs:
                     self.canvas.create_text(
-                            (p1[0]*self.xScale+px+pWidth+1,
-                            p1[1]*self.yScale+py+pWidth+1),
+                            (p1[0]*self.xScale+px+pointSize+1,
+                            p1[1]*self.yScale+py+pointSize+1),
                             fill='red',text=i,anchor='ne'
                             )
                 i+=1
             #draw the last point in the route
             self.canvas.create_polygon(
-                        (p2[0]*self.xScale+px-pWidth/2,
-                        p2[1]*self.yScale+py-pWidth/2,
-                        p2[0]*self.xScale+px+pWidth/2,
-                        p2[1]*self.yScale+py+pWidth/2,),
+                        (p2[0]*self.xScale+px-pointSize/2,
+                        p2[1]*self.yScale+py-pointSize/2,
+                        p2[0]*self.xScale+px+pointSize/2,
+                        p2[1]*self.yScale+py+pointSize/2,),
                         fill='red',outline='red',
                         )
             #place the count and current distance
-            self.canvas.create_text((px,py),text='(%d) %.2f' % \
-                    (self.iterCount,dist),anchor='nw')
+            x=self.width
+            y=0
+            self.canvas.create_text((x,y),text='(%d) %.2f' % \
+                    (self.iterCount,dist),anchor='ne')
         #update the status
         self.lblStatus.configure(text=status)
         #self.lblStatus.update_idletasks()
