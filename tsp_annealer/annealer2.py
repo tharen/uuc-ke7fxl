@@ -40,12 +40,24 @@ class AnnealerProfile:
         stats.print_stats()
 
 class Annealer:
-    """
-    Solve a combinatorial problem using simulated annealing
-    """
-    def __init__(self,ctlQ,statusQ,beginT=0,endT=0,alpha=0,tReps=0,
+    def __init__(self,ctlQ,statusQ,beginTemp=0,endTemp=0,alpha=0,reps=0,
             log='anneal.txt',**kargs):
-
+        """
+        Solve a combinatorial problem using simulated annealing
+        
+        Args
+        ----
+        ctlQ - Queue object for passing thread control messages
+        statusQ - Queue object for passing thread status messages
+        
+        beginTemp - Initial annealing tempature
+        endTemp - Final anealing tempature
+        alpha - Cooling rate between temperature steps
+        reps - Number of alternatives to attempt at each temperature step
+        
+        log - Log file path
+        """
+    
 ##        import psyco
 ##        psyco.full()
 
@@ -53,23 +65,23 @@ class Annealer:
 
         self.anneal=self.coolAfterReps
 
-        self.beginT=beginT #beginning Temp
-        self.endT=max(endT,0.0004) #ending temp
+        self.beginT=beginTemp #beginning Temp
+        self.endT=max(endTemp,0.0004) #ending temp
         self.alpha=alpha #cooling schedule
-        self.tReps=tReps #solutions to test per temp cycle
+        self.tReps=reps #solutions to test per temp cycle
 
         self.log=open(log,'w')
         self.ctlQ=ctlQ
         self.statusQ=statusQ
 
-        self.T=beginT
+        self.T=beginTemp
 
         self.log.write('\n'.join(map(str,(self.beginT,self.endT,self.alpha,self.tReps))))
         self.log.write('\n')
         self.log.flush()
 
 
-    def post(self,log=False,*args):
+    def postMsg(self,log=False,*args):
         """
         print and log a status message
         """
@@ -150,7 +162,7 @@ class Annealer:
                 if i>=self.tReps: break
                 tE=self.problem()
                 if tE<=cE:
-                    self.post(self.T,i,cE,tE,bE)
+                    self.postMsg(self.T,i,cE,tE,bE)
                     best=False
                     cE=tE
                     #if this is the best so far, upgrade it
@@ -168,7 +180,7 @@ class Annealer:
                     p=exp(px/self.T) #Boltzman probability of acceptance
                     r=rand() #random 0-1
                     if r<=p: #probability is greater than some random value
-                        self.post(self.T,i,cE,tE,bE,px,p,r)
+                        self.postMsg(self.T,i,cE,tE,bE,px,p,r)
                         self.problem.keep()
                         cE=tE
 
@@ -460,10 +472,10 @@ if __name__=='__main__':
 
     wArgs={'problem':TSP,
             'problemKArgs':problemKArgs,
-            'beginT':1000,
-            'endT':.01,
+            'beginTemp':1000,
+            'endTemp':1,
             'alpha':0.99,
-            'tReps':600,
+            'reps':1200,
             'annealer':'coolAfterReps',
             'nextSolution':'sequenceReverse',
             }
