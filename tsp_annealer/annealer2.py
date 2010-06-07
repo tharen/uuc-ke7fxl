@@ -44,7 +44,7 @@ class AnnealerProfile:
         stats.print_stats()
 
 class Annealer:
-    def __init__(self,problem,
+    def __init__(self,
             beginTemp=100,endTemp=1,
             alpha=0.95,reps=200,
             log='anneal.txt',**kargs):
@@ -53,9 +53,6 @@ class Annealer:
 
         Args
         ----
-        #controlMessageQueue - Queue for controlling the annealer loop
-        #statusCallback - Function for passing annealer status messages
-
         beginTempemp - Initial annealing tempature
         endTemp - Final anealing tempature
         alpha - Cooling rate between temperature steps
@@ -68,10 +65,10 @@ class Annealer:
 ##        import psyco
 ##        psyco.full()
 
-        self.problem=problem #kargs['problem'](**kargs)#['problemKArgs'])
+        #self.problem=problem #kargs['problem'](**kargs)#['problemKArgs'])
 
         #set optional annealling routine
-        self.anneal=self.coolAfterReps
+        self.solve=self.coolAfterReps
 
         self.beginTemp=beginTemp #beginning Temp
         self.endTemp=max(endTemp,0.0004) #ending temp
@@ -91,15 +88,6 @@ class Annealer:
         self.statusQueue = Queue.Queue()
         self.controlQueue = Queue.Queue()
 
-    def setup(self,params):
-        self.__dict__.update(params)
-        self.currentTemp = self.beginTemp
-        self.log.write('Parameters reset:\n')
-        self.log.write('  %s = %s\n' % ('beginTemp',self.beginTemp))
-        self.log.write('  %s = %s\n' % ('endT',self.endTemp))
-        self.log.write('  %s = %s\n' % ('alpha',self.alpha))
-        self.log.write('  %s = %s\n' % ('reps',self.reps))
-
     def postMsg(self,log=False,*args):
         """
         print and log a status message
@@ -115,12 +103,31 @@ class Annealer:
             print fmt % args
 
     def start(self):
+        """
+        Enter control message loop waiting for work or exit messages
+        """
 
-        self.running=True
-        self.stepping=False
+        while 1:
+            msg = self.controlQueue.get()
 
-        #self.profile.runctx('self.start()',globals(),locals())
-        self.anneal()
+            print 'Control loop got: %s' % msg.type
+
+            if msg.type=='start':
+                problem = msg.data['problem']
+                self.beginTemp = msg.data['beginTemp']
+                self.endTemp = msg.data['endTemp']
+                self.alpha = msg.data['alpha']
+                self.reps = msg.data['reps']
+                self.currentTemp = self.beginTemp
+
+                self.running=True
+                self.stepping=False
+
+                self.solve(problem)
+
+            elif msg.type == 'exit':
+                print 'Exiting control loop'
+                break
 
     def _continue(self):
         """
@@ -148,12 +155,6 @@ class Annealer:
             self.stepping=False
             return True
 
-        elif msg.type=='stop':
-            #print 'worker got stop'
-            self.running = False
-            self.stepping = False
-            return False
-
         elif msg.type=='step':
             #print 'worker got step'
             self.stepping=True
@@ -164,19 +165,21 @@ class Annealer:
             #print 'worker got unknown ctl %s' % ctl
             return True
 
-    def coolAfterReps(self,):
+    def coolAfterReps(self,problem):
         """
         SA algorithm with proportional cooling after max repetitions
         """
         #get the first solution
 
-        cS=self.problem.solution
-        cE=self.problem.fitness
+        cS=problem.solution
+        cE=problem.fitness
         bE=cE
 
-        sol=self.problem.elaborate()
+        sol=problem.elaborate()
         #self.statusQ.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),self.running))
-        self.statusQueue.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),True))
+        #self.statusQueue.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),True))
+        msg = WorkerMessage(sol,cE,bE,self.currentTemp,0,True)
+        self.statusQueue.put(msg)
 
         #loop until temp is less than self.endT
         st=time.time()
@@ -189,7 +192,7 @@ class Annealer:
                 if i>=self.reps: break
 
                 #get a new problem solution to test
-                tE=self.problem.next()
+                tE=problem.next()
 
                 #Keep the new solution if it is the same or better
                 #   than the current solution
@@ -204,7 +207,7 @@ class Annealer:
 
 ##                        sol=self.problem.elaborate()
 ##                        self.statusQ.put((sol,cE,'%.1f (%.1f) %.4f' % (cE,bE,self.currentTemp),self.running))
-                    self.problem.keep(best)
+                    problem.keep(best)
 
                 #if test is higher energy, select it by probability proportional to T
                 else:
@@ -214,22 +217,31 @@ class Annealer:
                     r=rand() #random 0-1
                     if r<=p: #probability is greater than some random value
                         self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r)
-                        self.problem.keep()
+                        problem.keep()
                         cE=tE
 
-                i+=1
-            reps+=i
-            #self.statusQ.put((self.cSol,self.cOV,'%.1f (%.1f) %.3f' % (self.cOV,self.bOV,self.currentTemp),self.running))
-            sol=self.problem.elaborate()
-            self.statusQueue.put((sol,cE,'%.1f (%.1f) %.4f' % (cE,bE,self.currentTemp),True))
-            self.currentTemp*=self.alpha
+                i += 1
+            reps += i
+
+            #post the current solution
+            sol = problem.elaborate()
+            msg = WorkerMessage(sol,cE,bE,self.currentTemp,reps,True)
+            self.statusQueue.put(msg)
+
+            #step down the temperature by alpha
+            self.currentTemp *= self.alpha
             #exit the loop if endT has been reached
             if self.currentTemp<self.endTemp:break
 
         et=time.time()
-        #self.statusQ.put((self.bSol,self.bOV,'%.1f (%.1f) %.3f' % (self.cOV,self.bOV,self.currentTemp),self.running))
-        sol=self.problem.elaborate(True)
-        self.statusQueue.put((sol,bE,'%.1f (%.1f) %.4f' % (cE,bE,self.currentTemp),True))
+
+        #send off the final solution
+        sol = problem.elaborate(True)
+        msg = WorkerMessage(sol,cE,bE,self.currentTemp,reps,False)
+        self.statusQueue.put(msg)
+
+        self.running = False
+        self.stepping = False
 
         print 'Annealling Done'
         print 'Best Energy:',bE
@@ -242,11 +254,23 @@ class Annealer:
 
         ##TODO: report the distance matrix
 
+class WorkerMessage:
+    def __init__(self,solution,currentEnergy,
+            bestEnergy,currentTemp,
+            reps,running):
+        self.solution=solution
+        self.currentEnergy=currentEnergy
+        self.bestEnergy=bestEnergy
+        self.currentTemp=currentTemp
+        self.reps=reps
+        self.running=running
+
 class TSP:
     """
     Travelling sales person routing class
     """
-    def __init__(self,locations={},targetLength=0,
+    def __init__(self,
+            locations={},targetLength=0,
             writeDistMatrix=True,
             solutionAlgorithm='sequence_reverse',
             **kargs):
@@ -273,37 +297,58 @@ class TSP:
 
         self.locations=locations
         self.targetLength=targetLength
-        self.numLocs=len(self.locations)
+        self.writeDistMatrix = writeDistMatrix
+
+        #initialize the solution generator
+        self.solutionsGenerator=self.solutionAlgoritms[solutionAlgorithm]
+
+        self.__initProblem()
+
+    def initProblem(self,locations,targetLength=0.0,
+            writeDistMatrix=True):
+        """
+        Initiate the TSP problem objects
+
+        Args
+        ----
+        locations - A list of points to solve for in euclidean distance
+        targetLength - The goal distance of total travel
+        wirteDistMatrix - Write out the location distance matrix
+        """
+        self.locations = locations
+        self.targetLength = targetLength
+        self.writeDistMatrix = writeDistMatrix
+
+        self.__initProblem()
+
+    def __initProblem(self):
+        self.numLocs = len(self.locations)
 
         #calculate the distance matrix
-        self.distMatrix=self._calcDistMatrix()
+        self.distanceMatrix = self._calcDistMatrix()
+
         #optionally write out the distance matrix
-        if writeDistMatrix:
-            distmat=open('distance.dat','w')
+        if self.writeDistMatrix:
+            distmat = open('distance.dat','w')
             self._writeDistMatrix(distmat)
             distmat.close()
 
         #prepare the first solution by shuffling the location keys
-        self.solution=range(self.numLocs)
+        self.solution = range(self.numLocs)
         shuffle(self.solution)
 
         #initialize the route length and fitness
-        self.length=self._calcLength(self.solution)
-        self.fitness=self._calcFitness()
+        self.length = self._calcLength(self.solution)
+        self.fitness = self._calcFitness()
 
         #copy the initial solution to the best
         ##Ideally these would converge at the end of the process
         ##making best values pointless and redundant
-        self.bestSolution=self.solution[:]
-        self.bestLength=self.length
-        self.bestFitness=self.fitness
+        self.bestSolution = self.solution[:]
+        self.bestLength = self.length
+        self.bestFitness = self.fitness
 
-        #initialize the solution generator
-        self.solutions=self.solutionAlgoritms[solutionAlgorithm]()
-
-        #self.solutions=self._genSolution_swap()
-        #self.solutions=self._genSolution_1PositionChange()
-        #self.solutions=self._genSolution_seqrand()
+        self.solutions = self.solutionsGenerator()
 
     def _writeDistMatrix(self,outFile=sys.stdout):
         """
@@ -320,7 +365,7 @@ class TSP:
         #for x in xrange(0,l):
         for y in xrange(0,l):
             vals = ''.join(['%-7.1f'] * l)
-            vals = vals % tuple(self.distMatrix[y])
+            vals = vals % tuple(self.distanceMatrix[y])
             r = '%-7d%s\n' % (y,vals)
             outFile.write(r)
 
@@ -357,7 +402,7 @@ class TSP:
         """
         n=self.numLocs-1
         l=self.locations
-        dm=self.distMatrix
+        dm=self.distanceMatrix
 
         return sum([dm[(sol[i],sol[i+1])] for i in xrange(-1,n)])
 
@@ -507,32 +552,40 @@ def ts(s):
     s=(m-int(m))*60
     return '%d:%d:%.3f' % (h,int(m),s)
 
-if __name__=='__main__':
-    import gui,os,pstats
+def test():
+    import gui
+    import os
+    #import pstats
 
     numCities=31
     w=320
     h=240
 
-    problem = TSP(locations = randomLocations(numCities,w,h),
-            targetLength = 0.0,
-            writeDistMatrix = True,
-            solutionAlgorithm='sequence_reverse')
-
-    wArgs={ 'beginTempemp':800,
+    solverArgs={ 'beginTemp':800,
             'endTemp':1,
             'alpha':0.975,
             'reps':500,
             'annealer':'coolAfterReps',
             }
 
-    worker = Annealer(problem,**wArgs)
+    print 'Init GUI'
     myGui = gui.ThreadedGUI(w,h)
 
+    print 'Init solver'
+    solver = Annealer(**solverArgs)
+
+##    problem = TSP(locations = randomLocations(numCities,w,h),
+##            targetLength = 0.0,
+##            writeDistMatrix = True,
+##            solutionAlgorithm='sequence_reverse')
+
     #gui.ControlMain(gui.GuiThread,gui.ThreadedGUI,AnnealerProfile,wArgs,w,h,50)
-    ctl = gui.ControlMain(myGui,worker)
+    print 'Call main'
+    ctl = gui.ControlMain(myGui,solver,TSP)
     ctl.mainLoop()
 
+if __name__=='__main__':
+    test()
     #os.system('gnuplot -persist plot.txt')
 
 ##    stats=pstats.Stats('profile.txt')
