@@ -49,7 +49,21 @@ class ThreadedGUI(tk.Tk):
         self.reps = tk.IntVar()
         self.target = tk.DoubleVar()
 
-        self.__initGui()
+        self.numCities.set(50)
+        self.startTemp.set(800.0)
+        self.endTemp.set(1.0)
+        self.alpha.set(0.975)
+        self.reps.set(300)
+        self.target.set(0.0)
+
+        #status label variables
+        self.currentTemp=tk.StringVar()
+        self.currentEnergy=tk.StringVar()
+        self.bestEnergy=tk.StringVar()
+        self.currentReps = tk.StringVar()
+
+        print 'build GUI'
+        self.initGui()
 
         self.iterCount=0 #track the total number of redraws
         self.clickCount=0 #mouse click counter for swapCities
@@ -63,112 +77,127 @@ class ThreadedGUI(tk.Tk):
         self.checkQ()
         self.mainloop()
 
-    def __initGui(self):
-        self.rowconfigure(0,weight=1)
-        self.columnconfigure(1,weight=1)
+    def initGui(self):
+        self.rowconfigure(2,weight=1)
+        self.columnconfigure(0,weight=1)
+
+        self.toolBar = tk.Frame(self,pady=3)
+        self.toolBar.grid(row=0,column=0,sticky='nsew')
+
+        self.ctlFrame = tk.Frame(self)
+        self.ctlFrame.grid(row=1,column=0,sticky='new')
+        self.ctlFrame.grid_rowconfigure(8,weight=1)
+        #self.ctlFrame.grid_columnconfigure(8,weight=1)
+
+        self.progFrame = tk.Frame(self)
+        self.progFrame.grid(row=2,column=0,sticky='new')
+
         self.frame=tk.Frame(self)
-        self.frame.grid(row=0,column=1,sticky='nsew')
+        self.frame.grid(row=1,column=1,rowspan=2,sticky='nsew')
         self.frame.grid_rowconfigure(0,weight=1)
         self.frame.grid_columnconfigure(0,weight=1)
 
-        self.ctlFrame = tk.Frame(self)
-        self.ctlFrame.grid(row=0,column=0,sticky='nse')
-        self.ctlFrame.grid_rowconfigure(7,weight=1)
-        self.ctlFrame.grid_columnconfigure(0,weight=1)
-
-        lblCityCount = tk.Label(self.ctlFrame,
-                text='Cities:',anchor='w')
-        lblCityCount.grid(row=0,column=0,sticky='new')
-        self.entCityCount = tk.Entry(self.ctlFrame,
-                textvariable=self.numCities,width=5)
-        self.entCityCount.grid(row=0,column=1,sticky='new')
-
         lblStartTemp = tk.Label(self.ctlFrame,text='Start Temp:',
                 anchor='w')
-        lblStartTemp.grid(row=1,column=0,sticky='new')
+        lblStartTemp.grid(row=0,column=0,sticky='new')
         self.entStartTemp = tk.Entry(self.ctlFrame,
-                textvariable=self.startTemp,width=5)
-        self.entStartTemp.grid(row=1,column=1,sticky='sew')
+                textvariable=self.startTemp,width=6)
+        self.entStartTemp.grid(row=0,column=1,sticky='sew')
 
         lblEndTemp = tk.Label(self.ctlFrame,text='End Temp:',
                 anchor='w')
-        lblEndTemp.grid(row=2,column=0,sticky='new')
+        lblEndTemp.grid(row=1,column=0,sticky='new')
         self.entEndTemp = tk.Entry(self.ctlFrame,
-                textvariable=self.endTemp,width=5)
-        self.entEndTemp.grid(row=2,column=1,sticky='sew')
+                textvariable=self.endTemp,width=6)
+        self.entEndTemp.grid(row=1,column=1,sticky='sew')
 
         lblReps = tk.Label(self.ctlFrame,text='Reps:',
                 anchor='w')
-        lblReps.grid(row=3,column=0,sticky='new')
+        lblReps.grid(row=2,column=0,sticky='new')
         self.entReps = tk.Entry(self.ctlFrame,
-                textvariable=self.reps,width=5)
-        self.entReps.grid(row=3,column=1,sticky='sew')
+                textvariable=self.reps,width=6)
+        self.entReps.grid(row=2,column=1,sticky='sew')
 
         lblAlpha = tk.Label(self.ctlFrame,text='Alpha:',
                 anchor='w')
-        lblAlpha.grid(row=4,column=0,sticky='new')
+        lblAlpha.grid(row=3,column=0,sticky='new')
         self.Alpha = tk.Entry(self.ctlFrame,
-                textvariable=self.alpha,width=5)
-        self.Alpha.grid(row=4,column=1,sticky='sew')
+                textvariable=self.alpha,width=6)
+        self.Alpha.grid(row=3,column=1,sticky='sew')
+
+        lblCityCount = tk.Label(self.ctlFrame,
+                text='Cities:',anchor='w')
+        lblCityCount.grid(row=4,column=0,sticky='new')
+        self.entCityCount = tk.Entry(self.ctlFrame,
+                textvariable=self.numCities,width=5)
+        self.entCityCount.grid(row=4,column=1,sticky='new')
 
         lblTarget = tk.Label(self.ctlFrame,text='Target:',
                 anchor='w')
         lblTarget.grid(row=5,column=0,sticky='new')
         self.Target = tk.Entry(self.ctlFrame,
-                textvariable=self.target,width=5)
+                textvariable=self.target,width=6)
         self.Target.grid(row=5,column=1,sticky='sew')
 
-        self.btnStart=tk.Button(self.ctlFrame,text='Start',
+        #---Run Time
+        self.lblCurTemp = tk.Label(self.progFrame,
+                textvariable=self.currentTemp,
+                anchor='w')
+        self.lblCurTemp.grid(row=0,column=0,sticky='w')
+        self.lblCurEnergy = tk.Label(self.progFrame,
+                textvariable=self.currentEnergy,
+                anchor='w')
+        self.lblCurEnergy.grid(row=1,column=0,sticky='w')
+        self.lblBestEnergy = tk.Label(self.progFrame,
+                textvariable=self.bestEnergy,
+                anchor='w')
+        self.lblBestEnergy.grid(row=2,column=0,sticky='w')
+        self.lblCurrentReps = tk.Label(self.progFrame,
+                textvariable=self.currentReps,
+                anchor='w')
+        self.lblCurrentReps.grid(row=3,column=0,sticky='w')
+
+        #---Buttons
+        self.btnStart=tk.Button(self.toolBar,text='Start',
                 command=self.click_start)
-        self.btnStart.grid(row=6,column=0,
-                sticky='sew',columnspan=2)
+        self.btnStart.grid(row=0,column=0)
 
-
-        self.btnGo=tk.Button(self.ctlFrame,text='Go',
-                command=self.click_go)
-        self.btnGo.grid(row=7,column=0,
-                sticky='sew',columnspan=2)
-
-##        self.btnPause=tk.Button(self.ctlFrame,text='Pause',
-##                command=self.click_pause)
-##        self.btnPause.grid(row=6,column=0,
-##                sticky='sew',columnspan=2)
-
-        self.btnStep=tk.Button(self.ctlFrame,text='Step',
+        self.btnStep=tk.Button(self.toolBar,text='Step',
                 command=self.click_step)
-        self.btnStep.grid(row=8,column=0,
-                sticky='sew',columnspan=2)
+        self.btnStep.grid(row=0,column=1)
 
-        self.btnStop=tk.Button(self.ctlFrame,text='Stop',
-                command=self.click_stop)
-        self.btnStop.grid(row=9,column=0,
-                sticky='sew',columnspan=2)
+        self.btnExit=tk.Button(self.toolBar,text='Exit',
+                command=self.click_exit)
+        self.btnExit.grid(row=0,column=2)
 
+        #---Canvas
         self.canvas=tk.Canvas(self.frame,
                 width=self.width+self.padx*2,
                 height=self.height+self.pady*2,
+                bg='white'
                 )
-        self.canvas.grid()
+        self.canvas.grid(row=0,column=0,sticky='nsew')
 
+        self.canvas.bind("<Button-1>", self.swapSelect)
+
+        #---Status
         self.bottomFrame = tk.Frame(self.frame)
         self.bottomFrame.grid(row=1,column=0,sticky='sew')
         self.bottomFrame.grid_columnconfigure(4,weight=1)
 
-        self.lblStatus=tk.Label(self.bottomFrame,width=25,anchor=tk.E)
+        self.lblStatus=tk.Label(self.bottomFrame,width=25,anchor='e')
         self.lblStatus.grid(row=0,column=4,sticky='sew')
-
-        self.canvas.bind("<Button-1>", self.swapSelect)
 
         self.protocol("WM_DELETE_WINDOW", self.kill)
 
     def kill(self):
-        self.ctlQ.put(Message('stop'))
-        self.root.after(500,self.root.destroy)
+        self.ctlQ.put(Message('exit'))
+        self.after(500,self.destroy)
 
     def click_start(self):
         data = {
-                'begTemp':self.startTemp.get()
-                ,'endtemp':self.endTemp.get()
+                'beginTemp':self.startTemp.get()
+                ,'endTemp':self.endTemp.get()
                 ,'alpha':self.alpha.get()
                 ,'reps':self.reps.get()
                 ,'points':self.numCities.get()
@@ -177,19 +206,19 @@ class ThreadedGUI(tk.Tk):
 
         self.ctlQ.put(Message('start',data))
 
-    def click_stop(self):
-        self.ctlQ.put(Message('stop'))
+    def click_exit(self):
+        self.kill()
 
     def click_step(self):
         self.ctlQ.put(Message('step'))
 
-    def click_go(self):
+    def click_continue(self):
         self.ctlQ.put(Message('continue'))
 
 ##    def click_pause(self):
 ##        self.ctlQ.put('pause')
 
-    def __drawRoutes(self,pntList,dist,msg,running,drawIDs=False):
+    def drawRoutes(self,pntList,dist,msg,running,drawIDs=False):
         self.pntList=pntList
 
         lineWidth = self.lineWidth
@@ -280,7 +309,7 @@ class ThreadedGUI(tk.Tk):
 
         dist=self.routeDist()
 
-        self.__drawRoutes(self.pntList,dist,'',True)
+        self.drawRoutes(self.pntList,dist,'',True)
 
     def routeDist(self):
         dist=0
@@ -299,23 +328,28 @@ class ThreadedGUI(tk.Tk):
         check for something to do in the draw Queue
         """
         try:
-            draw=self.drawQ.get_nowait()
+            msg=self.drawQ.get_nowait()
 
         except Queue.Empty:
             self.update_idletasks()
             self.after(1,self.checkQ)
             return
 
-        rteList=draw[0]
-        dist=draw[1]
-        msg=draw[2]
-        running=draw[3]
+        rteList=msg.solution
+        dist=msg.currentEnergy
+        stat='%.1f (%.1f)' % (msg.currentEnergy,msg.bestEnergy)
+        running=msg.running
 
-        self.__drawRoutes(rteList,dist,msg,running,drawIDs=True)
+        self.drawRoutes(rteList,dist,stat,running,drawIDs=True)
 
         time.sleep(.001)
         #self.root.update_idletasks()
         self.after_idle(self.checkQ)
+
+        self.currentTemp.set('Temp: %.2f' % msg.currentTemp)
+        self.currentEnergy.set('Energy: %.2f' % msg.currentEnergy)
+        self.bestEnergy.set('Best: %.2f' % msg.bestEnergy)
+        self.currentReps.set('Reps: %d' % msg.reps)
 
 class Worker:
     """
@@ -412,12 +446,13 @@ class ControlMain:
     def __init__(self,
             gui,
             worker,
-            guiWidth=320,guiHeight=240):
+            problemClass):
 
         ##TODO: can the gui draw q be pipelined direct to the worker?
 
         self.gui = gui
-        self.worker=worker
+        self.worker = worker
+        self.problemClass = problemClass
 
         self.running = False
         self.step = False
@@ -426,8 +461,9 @@ class ControlMain:
         self.guiThread=threading.Thread(target=self.gui.start)
         self.workerThread=threading.Thread(target=self.worker.start)
 
+        print 'Start threads'
         self.guiThread.start()
-        time.sleep(.5)
+        time.sleep(.05)
         self.workerThread.start()
 
     def end(self):
@@ -449,20 +485,25 @@ class ControlMain:
         status updates from the worker are converted into drawing requests for
         the gui.  The gui's control outputs are passed to the worker.
         """
+        print 'Enter control mainLoop'
         #if running manage the Qs
 
         self.running = True
-        self.worker.controlQueue.put(Message('go'))
+        #self.worker.controlQueue.put(Message('go'))
 
         while self.running:
             #relay messages between the gui and worker threads
             try:
                 #check the jobQ without blocking
-                job=self.worker.statusQueue.get_nowait() #(0,.1)
+                msg=self.worker.statusQueue.get_nowait() #(0,.1)
                 ##TODO: process the job results
                 #if there is something to do, pass it to the gui
                 ##TODO: from the job, prepare the gui package
-                self.gui.drawQ.put(job)
+                self.gui.drawQ.put(msg)
+
+##                #clear the status Queue
+##                while 1:
+##                    self.worker.statusQueue.get_nowait()
 
             except Queue.Empty:
                 pass
@@ -475,6 +516,16 @@ class ControlMain:
                 #if the message is "stop" call the end command first
                 #if msg=='stop':
                 #    self.end()
+                if msg.type == 'start':
+                    import annealer2
+                    locations = annealer2.randomLocations(
+                            msg.data['points'],
+                            320,240)
+                    problem = self.problemClass(locations)
+                    msg.data['problem'] = problem
+
+                elif msg.type == 'exit':
+                    self.running = False
 
                 self.worker.controlQueue.put(msg)
 
@@ -484,18 +535,21 @@ class ControlMain:
             #wait and loop recursively
             time.sleep(.001)
 
-        print 'exit mainloop'
+        print 'exit control mainloop'
         #We're done
 
 if __name__=='__main__':
 
-    wArgs={'rX':(0,180),'rY':(0,90),'pnts':20}
-    worker = Worker(wArgs)
+    import annealer2
+    annealer2.test()
 
-    gui = ThreadedGUI()
-
-    test=ControlMain(gui,worker)
-    test.mainLoop()
+##    wArgs={'rX':(0,180),'rY':(0,90),'pnts':20}
+##    worker = Worker(wArgs)
+##
+##    gui = ThreadedGUI()
+##
+##    test=ControlMain(gui,worker)
+##    test.mainLoop()
     #sys.exit()
 
 ##    root=tk.Tk()
