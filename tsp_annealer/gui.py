@@ -42,14 +42,19 @@ class ThreadedGUI(tk.Tk):
         self.pointSize=pointSize
         self.lineWidth=lineWidth
 
+        #problem setup variables
+        self.problemSource = tk.StringVar()
+        self.problemSource.set('random')
         self.numCities = tk.IntVar()
+        self.numCities.set(50)
+        self.filePath = tk.StringVar()
+
         self.startTemp = tk.DoubleVar()
         self.endTemp = tk.DoubleVar()
         self.alpha = tk.DoubleVar()
         self.reps = tk.IntVar()
         self.target = tk.DoubleVar()
 
-        self.numCities.set(50)
         self.startTemp.set(800.0)
         self.endTemp.set(1.0)
         self.alpha.set(0.975)
@@ -62,7 +67,6 @@ class ThreadedGUI(tk.Tk):
         self.bestEnergy=tk.StringVar()
         self.currentReps = tk.StringVar()
 
-        print 'build GUI'
         self.initGui()
 
         self.iterCount=0 #track the total number of redraws
@@ -78,13 +82,53 @@ class ThreadedGUI(tk.Tk):
         self.mainloop()
 
     def initGui(self):
+        print 'Init GUI'
+
         self.rowconfigure(2,weight=1)
         self.columnconfigure(0,weight=1)
 
-        self.toolBar = tk.Frame(self,pady=3)
-        self.toolBar.grid(row=0,column=0,sticky='nsew')
+        self.mainFrame = tk.Frame(self,padx=3,pady=3)
+        self.mainFrame.grid(sticky='nsew')
+        self.mainFrame.rowconfigure(0,weight=1)
+        self.mainFrame.columnconfigure(0,weight=1)
 
-        self.ctlFrame = tk.Frame(self)
+        #Problem options frame
+        self.problemFrame = tk.LabelFrame(self.mainFrame,text='Load Points',
+                padx=3,pady=3)
+        self.problemFrame.grid(row=0,column=0,columnspan=2,sticky='new',
+                padx=3,pady=3)
+        self.problemFrame.columnconfigure(2,weight=1)
+
+        self.optRandom = tk.Radiobutton(self.problemFrame,
+                text = 'Random',variable=self.problemSource,
+                value = 'random'
+                )
+        self.optRandom.grid(row=0,column=0,sticky='nw')
+
+        self.entCityCount = tk.Entry(self.problemFrame,
+                textvariable=self.numCities,width=4)
+        self.entCityCount.grid(row=0,column=1,sticky='w',padx=3)
+
+        self.optFromFile = tk.Radiobutton(self.problemFrame,
+                text = 'From File',variable=self.problemSource,
+                value = 'file'
+                )
+        self.optFromFile.grid(row=1,column=0,sticky='nw')
+
+        self.entFilePath = tk.Entry(self.problemFrame,
+                textvariable=self.filePath)
+        self.entFilePath.grid(row=1,column=1,
+                columnspan=2,sticky='ew',padx=3)
+
+        self.btnFilePath = tk.Button(self.problemFrame,
+                text='Browse',command=self.btnFilePath_click
+                )
+        self.btnFilePath.grid(row=1,column=3)
+
+        self.toolBar = tk.Frame(self.mainFrame,pady=3)
+        self.toolBar.grid(row=5,column=0,sticky='nsew')
+
+        self.ctlFrame = tk.Frame(self.mainFrame)
         self.ctlFrame.grid(row=1,column=0,sticky='new')
         self.ctlFrame.grid_rowconfigure(8,weight=1)
         #self.ctlFrame.grid_columnconfigure(8,weight=1)
@@ -92,7 +136,7 @@ class ThreadedGUI(tk.Tk):
         self.progFrame = tk.Frame(self)
         self.progFrame.grid(row=2,column=0,sticky='new')
 
-        self.frame=tk.Frame(self)
+        self.frame=tk.Frame(self.mainFrame)
         self.frame.grid(row=1,column=1,rowspan=2,sticky='nsew')
         self.frame.grid_rowconfigure(0,weight=1)
         self.frame.grid_columnconfigure(0,weight=1)
@@ -124,13 +168,6 @@ class ThreadedGUI(tk.Tk):
         self.Alpha = tk.Entry(self.ctlFrame,
                 textvariable=self.alpha,width=6)
         self.Alpha.grid(row=3,column=1,sticky='sew')
-
-        lblCityCount = tk.Label(self.ctlFrame,
-                text='Cities:',anchor='w')
-        lblCityCount.grid(row=4,column=0,sticky='new')
-        self.entCityCount = tk.Entry(self.ctlFrame,
-                textvariable=self.numCities,width=5)
-        self.entCityCount.grid(row=4,column=1,sticky='new')
 
         lblTarget = tk.Label(self.ctlFrame,text='Target:',
                 anchor='w')
@@ -193,6 +230,9 @@ class ThreadedGUI(tk.Tk):
     def kill(self):
         self.ctlQ.put(Message('exit'))
         self.after(500,self.destroy)
+
+    def btnFilePath_click(self):
+        pass
 
     def click_start(self):
         data = {
