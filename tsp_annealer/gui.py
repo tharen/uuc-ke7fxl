@@ -29,9 +29,12 @@ class xGuiThread:
         root.mainloop()
 
 class ThreadedGUI(tk.Tk):
-    def __init__(self,width=320,height=240,xScale=2.0,yScale=2.0,
+    def __init__(self,
+            width=320,height=240,
+            xScale=2.0,yScale=2.0,
             padx=15,pady=15,pointSize=6,lineWidth=2):
         tk.Tk.__init__(self)
+
         #self.root=root
         self.xScale=xScale
         self.yScale=yScale
@@ -67,8 +70,6 @@ class ThreadedGUI(tk.Tk):
         self.bestEnergy=tk.StringVar()
         self.currentReps = tk.StringVar()
 
-        self.initGui()
-
         self.iterCount=0 #track the total number of redraws
         self.clickCount=0 #mouse click counter for swapCities
 
@@ -78,7 +79,10 @@ class ThreadedGUI(tk.Tk):
         self.drawQ=Queue.Queue()
 
     def start(self):
-        self.checkQ()
+        print 'Start GUI'
+        self.initGui()
+        self.after(10,self.checkQ)
+        print 'GUI mainloop'
         self.mainloop()
 
     def initGui(self):
@@ -87,10 +91,10 @@ class ThreadedGUI(tk.Tk):
         self.rowconfigure(2,weight=1)
         self.columnconfigure(0,weight=1)
 
-        self.mainFrame = tk.Frame(self,padx=3,pady=3)
+        self.mainFrame = tk.Frame(self,padx=2,pady=2)
         self.mainFrame.grid(sticky='nsew')
-        self.mainFrame.rowconfigure(0,weight=1)
-        self.mainFrame.columnconfigure(0,weight=1)
+        self.mainFrame.rowconfigure(4,weight=1)
+        self.mainFrame.columnconfigure(1,weight=1)
 
         #Problem options frame
         self.problemFrame = tk.LabelFrame(self.mainFrame,text='Load Points',
@@ -99,6 +103,30 @@ class ThreadedGUI(tk.Tk):
                 padx=3,pady=3)
         self.problemFrame.columnconfigure(2,weight=1)
 
+        self.annealingOptionsFrame = tk.LabelFrame(self.mainFrame,
+                text='Annealing Options')
+        self.annealingOptionsFrame.grid(row=1,column=0,sticky='new')
+        self.annealingOptionsFrame.grid_rowconfigure(8,weight=1)
+        #self.annealingOptionsFrame.grid_columnconfigure(8,weight=1)
+
+        self.progressFrame = tk.LabelFrame(self.mainFrame,
+                text='Annealing Progress')
+        self.progressFrame.grid(row=2,column=0,sticky='new')
+        self.progressFrame.columnconfigure(1,weight=1)
+
+        self.frame=tk.Frame(self.mainFrame)
+        self.frame.grid(row=1,column=1,rowspan=3,sticky='nsew')
+        self.frame.grid_rowconfigure(1,weight=1)
+        self.frame.grid_columnconfigure(0,weight=1)
+
+        self.toolBar = tk.Frame(self.mainFrame,pady=3)
+        self.toolBar.grid(row=3,column=0,sticky='s')
+
+        self.statusBarFrame = tk.Frame(self.mainFrame)
+        self.statusBarFrame.grid(row=4,column=0,columnspan=2,sticky='sew')
+        self.statusBarFrame.grid_columnconfigure(0,weight=1)
+
+        #Problem options widgets
         self.optRandom = tk.Radiobutton(self.problemFrame,
                 text = 'Random',variable=self.problemSource,
                 value = 'random'
@@ -125,71 +153,56 @@ class ThreadedGUI(tk.Tk):
                 )
         self.btnFilePath.grid(row=1,column=3)
 
-        self.toolBar = tk.Frame(self.mainFrame,pady=3)
-        self.toolBar.grid(row=5,column=0,sticky='nsew')
-
-        self.ctlFrame = tk.Frame(self.mainFrame)
-        self.ctlFrame.grid(row=1,column=0,sticky='new')
-        self.ctlFrame.grid_rowconfigure(8,weight=1)
-        #self.ctlFrame.grid_columnconfigure(8,weight=1)
-
-        self.progFrame = tk.Frame(self)
-        self.progFrame.grid(row=2,column=0,sticky='new')
-
-        self.frame=tk.Frame(self.mainFrame)
-        self.frame.grid(row=1,column=1,rowspan=2,sticky='nsew')
-        self.frame.grid_rowconfigure(0,weight=1)
-        self.frame.grid_columnconfigure(0,weight=1)
-
-        lblStartTemp = tk.Label(self.ctlFrame,text='Start Temp:',
+        #---Annealing options
+        lblStartTemp = tk.Label(self.annealingOptionsFrame,text='Start Temp:',
                 anchor='w')
         lblStartTemp.grid(row=0,column=0,sticky='new')
-        self.entStartTemp = tk.Entry(self.ctlFrame,
+        self.entStartTemp = tk.Entry(self.annealingOptionsFrame,
                 textvariable=self.startTemp,width=6)
         self.entStartTemp.grid(row=0,column=1,sticky='sew')
 
-        lblEndTemp = tk.Label(self.ctlFrame,text='End Temp:',
+        lblEndTemp = tk.Label(self.annealingOptionsFrame,text='End Temp:',
                 anchor='w')
         lblEndTemp.grid(row=1,column=0,sticky='new')
-        self.entEndTemp = tk.Entry(self.ctlFrame,
+        self.entEndTemp = tk.Entry(self.annealingOptionsFrame,
                 textvariable=self.endTemp,width=6)
         self.entEndTemp.grid(row=1,column=1,sticky='sew')
 
-        lblReps = tk.Label(self.ctlFrame,text='Reps:',
+        lblReps = tk.Label(self.annealingOptionsFrame,text='Reps:',
                 anchor='w')
         lblReps.grid(row=2,column=0,sticky='new')
-        self.entReps = tk.Entry(self.ctlFrame,
+        self.entReps = tk.Entry(self.annealingOptionsFrame,
                 textvariable=self.reps,width=6)
         self.entReps.grid(row=2,column=1,sticky='sew')
 
-        lblAlpha = tk.Label(self.ctlFrame,text='Alpha:',
+        lblAlpha = tk.Label(self.annealingOptionsFrame,text='Alpha:',
                 anchor='w')
         lblAlpha.grid(row=3,column=0,sticky='new')
-        self.Alpha = tk.Entry(self.ctlFrame,
+        self.Alpha = tk.Entry(self.annealingOptionsFrame,
                 textvariable=self.alpha,width=6)
         self.Alpha.grid(row=3,column=1,sticky='sew')
 
-        lblTarget = tk.Label(self.ctlFrame,text='Target:',
+        lblTarget = tk.Label(self.annealingOptionsFrame,text='Target:',
                 anchor='w')
         lblTarget.grid(row=5,column=0,sticky='new')
-        self.Target = tk.Entry(self.ctlFrame,
+        self.Target = tk.Entry(self.annealingOptionsFrame,
                 textvariable=self.target,width=6)
         self.Target.grid(row=5,column=1,sticky='sew')
 
-        #---Run Time
-        self.lblCurTemp = tk.Label(self.progFrame,
+        #---Progress Widgets
+        self.lblCurTemp = tk.Label(self.progressFrame,
                 textvariable=self.currentTemp,
                 anchor='w')
         self.lblCurTemp.grid(row=0,column=0,sticky='w')
-        self.lblCurEnergy = tk.Label(self.progFrame,
+        self.lblCurEnergy = tk.Label(self.progressFrame,
                 textvariable=self.currentEnergy,
                 anchor='w')
         self.lblCurEnergy.grid(row=1,column=0,sticky='w')
-        self.lblBestEnergy = tk.Label(self.progFrame,
+        self.lblBestEnergy = tk.Label(self.progressFrame,
                 textvariable=self.bestEnergy,
                 anchor='w')
         self.lblBestEnergy.grid(row=2,column=0,sticky='w')
-        self.lblCurrentReps = tk.Label(self.progFrame,
+        self.lblCurrentReps = tk.Label(self.progressFrame,
                 textvariable=self.currentReps,
                 anchor='w')
         self.lblCurrentReps.grid(row=3,column=0,sticky='w')
@@ -217,13 +230,10 @@ class ThreadedGUI(tk.Tk):
 
         self.canvas.bind("<Button-1>", self.swapSelect)
 
-        #---Status
-        self.bottomFrame = tk.Frame(self.frame)
-        self.bottomFrame.grid(row=1,column=0,sticky='sew')
-        self.bottomFrame.grid_columnconfigure(4,weight=1)
-
-        self.lblStatus=tk.Label(self.bottomFrame,width=25,anchor='e')
-        self.lblStatus.grid(row=0,column=4,sticky='sew')
+        #---Status Bar
+        self.lblStatus=tk.Label(self.statusBarFrame,anchor='w',
+                relief='sunken',)
+        self.lblStatus.grid(row=0,column=0,sticky='ew')
 
         self.protocol("WM_DELETE_WINDOW", self.kill)
 
@@ -259,6 +269,7 @@ class ThreadedGUI(tk.Tk):
 ##        self.ctlQ.put('pause')
 
     def drawRoutes(self,pntList,dist,msg,running,drawIDs=False):
+
         self.pntList=pntList
 
         lineWidth = self.lineWidth
@@ -280,7 +291,7 @@ class ThreadedGUI(tk.Tk):
 
             self.canvas.delete(tk.ALL)
 
-            for p1,p2 in zip(self.pntList,self.pntList[1:] + [self.pntList[0]]):
+            for p1,p2 in zip(pntList,pntList[1:] + [pntList[0]]):
                 self.canvas.create_line(
                     p1[0]*self.xScale+px,p1[1]*self.yScale+py,
                     p2[0]*self.xScale+px,p2[1]*self.yScale+py,
@@ -289,7 +300,7 @@ class ThreadedGUI(tk.Tk):
                     )
 
             #draw each vertex and edge in the route
-            for i,pnt in enumerate(self.pntList):
+            for i,pnt in enumerate(pntList):
                 item=self.canvas.create_oval(
                         (pnt[0]*self.xScale+px-pointSize/2,
                         pnt[1]*self.yScale+py-pointSize/2,
@@ -307,13 +318,13 @@ class ThreadedGUI(tk.Tk):
                             fill='red',text=i,anchor='ne'
                             )
             #place the count and current distance
-            x=self.width
-            y=0
-            self.canvas.create_text((x,y),text='(%d) %.2f' % \
-                    (self.iterCount,dist),anchor='ne')
+            #x=self.width
+            #y=0
+            #self.canvas.create_text((x,y),text='(%d) %.2f' % \
+            #        (self.iterCount,dist),anchor='ne')
 
         #update the status
-        self.lblStatus.configure(text=status)
+        #self.lblStatus.configure(text=status)
 
     def swapSelect(self,event):
         x=self.canvas.canvasx(event.x)
@@ -371,8 +382,9 @@ class ThreadedGUI(tk.Tk):
             msg=self.drawQ.get_nowait()
 
         except Queue.Empty:
-            self.update_idletasks()
-            self.after(1,self.checkQ)
+            #self.update_idletasks()
+            time.sleep(.001)
+            self.after_idle(self.checkQ)
             return
 
         rteList=msg.solution
@@ -382,14 +394,14 @@ class ThreadedGUI(tk.Tk):
 
         self.drawRoutes(rteList,dist,stat,running,drawIDs=True)
 
-        time.sleep(.001)
-        #self.root.update_idletasks()
-        self.after_idle(self.checkQ)
-
         self.currentTemp.set('Temp: %.2f' % msg.currentTemp)
         self.currentEnergy.set('Energy: %.2f' % msg.currentEnergy)
         self.bestEnergy.set('Best: %.2f' % msg.bestEnergy)
         self.currentReps.set('Reps: %d' % msg.reps)
+
+        #time.sleep(.001)
+        #self.update_idletasks()
+        self.after_idle(self.checkQ)
 
 class Worker:
     """
@@ -459,7 +471,7 @@ class Worker:
                 w=self.getWork()
                 dist=self._calcDist(self.points)
             self.statusQueue.put((self.points,dist,"current (best)",self.running))
-            time.sleep(.02)
+            #time.sleep(.002)
 
     def getWork(self):
         w=random.shuffle(self.points)
@@ -541,9 +553,9 @@ class ControlMain:
                 ##TODO: from the job, prepare the gui package
                 self.gui.drawQ.put(msg)
 
-##                #clear the status Queue
-##                while 1:
-##                    self.worker.statusQueue.get_nowait()
+                #clear the status Queue
+                while 1:
+                    self.worker.statusQueue.get_nowait()
 
             except Queue.Empty:
                 pass
@@ -557,6 +569,7 @@ class ControlMain:
                 #if msg=='stop':
                 #    self.end()
                 if msg.type == 'start':
+                    ##TODO: this is import is too awkward
                     import annealer2
                     locations = annealer2.randomLocations(
                             msg.data['points'],

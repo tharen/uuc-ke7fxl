@@ -5,8 +5,11 @@
 import time,sys
 import Queue,threading
 
-#import psyco
-#psyco.full()
+try:
+    import psyco
+    psyco.full()
+except:
+    print 'psyco not available'
 
 #import numpy
 #rand=numpy.random.rand
