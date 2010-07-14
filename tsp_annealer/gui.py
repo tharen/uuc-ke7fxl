@@ -67,6 +67,7 @@ class ThreadedGUI(tk.Tk):
         self.randomSeed.set(1.0)
 
         #status label variables
+        self.runTime=tk.StringVar()
         self.currentTemp=tk.StringVar()
         self.currentEnergy=tk.StringVar()
         self.bestEnergy=tk.StringVar()
@@ -208,30 +209,43 @@ class ThreadedGUI(tk.Tk):
         self.Seed.grid(row=6,column=1,sticky='sew')
 
         #---Progress Widgets
+        r=0
+        
         lblCurTemp=tk.Label(self.progressFrame,text='Temp:',anchor='e'
-                ).grid(row=0,column=0,sticky='w')
+                ).grid(row=r,column=0,sticky='w')
         self.lblCurTemp = tk.Label(self.progressFrame,
                 textvariable=self.currentTemp)
-        self.lblCurTemp.grid(row=0,column=1,sticky='w')
+        self.lblCurTemp.grid(row=r,column=1,sticky='w')
 
+        r+=1
         lblCurEnergy=tk.Label(self.progressFrame,text='Energy:',anchor='e'
-                ).grid(row=1,column=0,sticky='w')
+                ).grid(row=r,column=0,sticky='w')
         self.lblCurEnergy = tk.Label(self.progressFrame,
                 textvariable=self.currentEnergy)
-        self.lblCurEnergy.grid(row=1,column=1,sticky='w')
+        self.lblCurEnergy.grid(row=r,column=1,sticky='w')
         
+        r+=1
         lblBest=tk.Label(self.progressFrame,text='Best:',anchor='e'
-                ).grid(row=2,column=0,sticky='w')
+                ).grid(row=r,column=0,sticky='w')
         self.lblBestEnergy = tk.Label(self.progressFrame,
                 textvariable=self.bestEnergy,)                
-        self.lblBestEnergy.grid(row=2,column=1,sticky='w')
+        self.lblBestEnergy.grid(row=r,column=1,sticky='w')
         
+        r+=1
         lblReps=tk.Label(self.progressFrame,text='Reps:',anchor='e'
-                ).grid(row=3,column=0,sticky='w')   
+                ).grid(row=r,column=0,sticky='w')   
         self.lblCurrentReps = tk.Label(self.progressFrame,
                 textvariable=self.currentReps)
-        self.lblCurrentReps.grid(row=3,column=1,sticky='w')
+        self.lblCurrentReps.grid(row=r,column=1,sticky='w')
 
+        r+=1
+        lblRunTime=tk.Label(self.progressFrame,text='Time:',anchor='e'
+                ).grid(row=r,column=0,sticky='w')
+
+        self.lblRunTime = tk.Label(self.progressFrame,
+                textvariable=self.runTime)
+        self.lblRunTime.grid(row=r,column=1,sticky='w')
+        
         #---Buttons
         self.btnStart=tk.Button(self.buttonFrame,text='Start',
                 command=self.click_start)
@@ -418,7 +432,8 @@ class ThreadedGUI(tk.Tk):
         running=msg.running
 
         self.drawRoutes(rteList,dist,stat,running,drawIDs=True)
-
+        
+        self.runTime.set('%.1f' % msg.runTime)
         self.currentTemp.set(  '%.2f' % msg.currentTemp)
         self.currentEnergy.set('%.2f' % msg.currentEnergy)
         self.bestEnergy.set(   '%.2f' % msg.bestEnergy)
@@ -594,7 +609,7 @@ class ControlMain:
                 #if msg=='stop':
                 #    self.end()
                 if msg.type == 'start':
-                    ##TODO: this is import is too awkward
+                    ##TODO: this import is too awkward
                     import annealer2
                     locations = annealer2.randomLocations(
                             msg.data['points'],

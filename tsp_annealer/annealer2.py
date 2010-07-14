@@ -109,7 +109,9 @@ class Annealer:
         """
         Enter control message loop waiting for work or exit messages
         """
-
+        
+        time.clock()
+        
         while 1:
             msg = self.controlQueue.get()
 
@@ -267,6 +269,7 @@ class WorkerMessage:
         self.currentTemp=currentTemp
         self.reps=reps
         self.running=running
+        self.runTime=time.clock()
 
 class TSP:
     """
@@ -415,7 +418,7 @@ class TSP:
         """
         if not len:
             len=self.length
-        return ((len-self.targetLength)**2)**0.5
+        return ((len-self.targetLength)**2)#**0.5
 
     def keep(self,best=False):
         """
