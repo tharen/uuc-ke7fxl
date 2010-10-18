@@ -10,7 +10,7 @@ log = logging.getLogger('annealer')
 log.setLevel(logging.DEBUG)
 hdlr = logging.StreamHandler()
 log.addHandler(hdlr)
-hdlr = logging.FileHandler(r'C:\Users\Tod\projects\uuc-ke7fxl\tsp_annealer\annealer.txt',mode='w')
+hdlr = logging.FileHandler(r'annealer.txt',mode='w')
 log.addHandler(hdlr)
 
 debug = log.debug
@@ -53,9 +53,10 @@ class AnnealerProfile:
         stats.print_stats()
 
 class Annealer:
-    def __init__(self,
-            beginTemp=100,endTemp=1,
-            alpha=0.95,reps=200
+    def __init__(self
+            ,beginTemp=100,endTemp=1
+            ,alpha=0.95,reps=200
+            ,dwell=1.001
             ,**kargs):
         """
         Solve a combinatorial problem using simulated annealing
@@ -66,7 +67,7 @@ class Annealer:
         endTemp - Final anealing tempature
         alpha - Cooling rate between temperature steps
         reps - Number of alternatives to attempt at each temperature step
-
+        dwell - Rate to increase the number of reps at each temperature step
         """
 
         #set optional annealling routine
@@ -75,12 +76,13 @@ class Annealer:
         self.beginTemp=beginTemp #beginning Temp
         self.endTemp=max(endTemp,0.0004) #ending temp
         self.alpha=alpha #cooling schedule
+        self.dwell=dwell #rate of temp step repetition increase
         self.reps=reps #solutions to test per temp cycle
 
         self.currentTemp=beginTemp
 
-	h = ('Beginning Temp','Ending Temp','Alpha','Reps')
-	i = map(str,(self.beginTemp,self.endTemp,self.alpha,self.reps))
+        h = ('Beginning Temp','Ending Temp','Alpha','Reps')
+        i = map(str,(self.beginTemp,self.endTemp,self.alpha,self.reps))
         debug(', '.join([': '.join(p) for p in zip(h,i)]))
 
         self.stepping = False
@@ -104,9 +106,9 @@ class Annealer:
         """
         Enter control message loop waiting for work or exit messages
         """
-        
+
         time.clock()
-        
+
         while 1:
             msg = self.controlQueue.get()
 
@@ -118,6 +120,7 @@ class Annealer:
                 self.endTemp = msg.data['endTemp']
                 self.alpha = msg.data['alpha']
                 self.reps = msg.data['reps']
+                self.dwell = msg.data['dwell']
                 self.currentTemp = self.beginTemp
 
                 self.running=True
@@ -178,7 +181,7 @@ class Annealer:
         sol=problem.elaborate()
         #self.statusQ.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),self.running))
         #self.statusQueue.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),True))
-        msg = WorkerMessage(sol,cE,bE,self.currentTemp,0,True)
+        msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,0,True)
         self.statusQueue.put(msg)
 
         #loop until temp is less than self.endT
@@ -197,7 +200,7 @@ class Annealer:
                 #Keep the new solution if it is the same or better
                 #   than the current solution
                 if tE<=cE:
-                    self.postMsg(self.currentTemp,i,cE,tE,bE)
+                    self.postMsg(self.currentTemp,i,cE,tE,bE,self.reps)
                     best=False
                     cE=tE
                     #if this is the best so far, upgrade it
@@ -216,7 +219,7 @@ class Annealer:
                     p=exp(px/self.currentTemp) #Boltzman probability of acceptance
                     r=rand() #random 0-1
                     if r<=p: #probability is greater than some random value
-                        self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r)
+                        self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r,self.reps)
                         problem.keep()
                         cE=tE
 
@@ -225,11 +228,13 @@ class Annealer:
 
             #post the current solution
             sol = problem.elaborate()
-            msg = WorkerMessage(sol,cE,bE,self.currentTemp,reps,True)
+            msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,reps,True)
             self.statusQueue.put(msg)
 
             #step down the temperature by alpha
             self.currentTemp *= self.alpha
+            #increase the number of reps
+            self.reps *= self.dwell
             #exit the loop if endT has been reached
             if self.currentTemp<self.endTemp:break
 
@@ -237,29 +242,30 @@ class Annealer:
 
         #send off the final solution
         sol = problem.elaborate(True)
-        msg = WorkerMessage(sol,cE,bE,self.currentTemp,reps,False)
+        msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,reps,False)
         self.statusQueue.put(msg)
 
         self.running = False
         self.stepping = False
 
-	info('Annealling Complete')
-	info('Solution: %s' % sol)
-	info('Energy: %.2f' % bE)
-	info('Total Reps: %d' % reps)
-	info('Solution Time: %s' % (ts(et-st),))
+        info('Annealling Complete')
+        info('Solution: %s' % sol)
+        info('Energy: %.2f' % bE)
+        info('Total Reps: %d' % reps)
+        info('Solution Time: %s' % (ts(et-st),))
 
         ##TODO: report the distance matrix
 
 class WorkerMessage:
-    def __init__(self,solution,currentEnergy,
-            bestEnergy,currentTemp,
-            reps,running):
+    def __init__(self,solution,currentEnergy
+            ,bestEnergy,currentTemp,dwell
+            ,reps,running):
         self.solution=solution
         self.currentEnergy=currentEnergy
         self.bestEnergy=bestEnergy
         self.currentTemp=currentTemp
         self.reps=reps
+        self.dwell=dwell
         self.running=running
         self.runTime=time.clock()
 
