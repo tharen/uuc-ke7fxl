@@ -6,6 +6,14 @@ import tkMessageBox
 import sys,time
 from math import sqrt
 import Queue,threading,random
+import logging
+
+log = logging.getLogger('annealer.gui')
+debug = log.debug
+info = log.info
+warn = log.warn
+error = log.error
+exception = log.exception
 
 ##TODO: combine GuiThread and ThreadedGUI into one
 
@@ -82,14 +90,14 @@ class ThreadedGUI(tk.Tk):
         self.drawQ=Queue.Queue()
 
     def start(self):
-        print 'Start GUI'
+        debug('Start GUI')
         self.initGui()
         self.after(10,self.checkQ)
-        print 'GUI mainloop'
+        debug('GUI mainloop')
         self.mainloop()
 
     def initGui(self):
-        print 'Init GUI'
+        debug('Init GUI')
 
         self.rowconfigure(0,weight=1)
         self.columnconfigure(0,weight=1)
@@ -348,7 +356,7 @@ class ThreadedGUI(tk.Tk):
                         fill='red',outline='red',
                         tags=str(i),
                         )
-                self.canvas.itemconfig(item, tags=(str(i),))
+		self.canvas.itemconfig(item, tags=(str(i),))
                 #draw the point id
                 if drawIDs:
                     self.canvas.create_text(
@@ -553,7 +561,7 @@ class ControlMain:
         self.guiThread=threading.Thread(target=self.gui.start)
         self.workerThread=threading.Thread(target=self.worker.start)
 
-        print 'Start threads'
+        debug('Start threads')
         self.guiThread.start()
         time.sleep(.05)
         self.workerThread.start()
@@ -568,7 +576,7 @@ class ControlMain:
         #wait while the worker gets the message to stop
         while self.workerThread.isAlive():
             time.sleep(.1)
-        print 'Worker Stopped'
+        debug('Worker Stopped')
 
     def mainLoop(self):
         ##TODO: simplify Qs
@@ -577,7 +585,7 @@ class ControlMain:
         status updates from the worker are converted into drawing requests for
         the gui.  The gui's control outputs are passed to the worker.
         """
-        print 'Enter control mainLoop'
+        debug('Enter control mainLoop')
         #if running manage the Qs
 
         self.running = True
@@ -628,7 +636,7 @@ class ControlMain:
             #wait and loop recursively
             time.sleep(.001)
 
-        print 'exit control mainloop'
+        debug('exit control mainloop')
         #We're done
 
 if __name__=='__main__':
