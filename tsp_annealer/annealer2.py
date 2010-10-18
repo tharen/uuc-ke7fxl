@@ -4,17 +4,27 @@
 
 import time,sys
 import Queue,threading
+import logging
+
+log = logging.getLogger('annealer')
+log.setLevel(logging.DEBUG)
+hdlr = logging.StreamHandler()
+log.addHandler(hdlr)
+hdlr = logging.FileHandler(r'C:\Users\Tod\projects\uuc-ke7fxl\tsp_annealer\annealer.txt',mode='w')
+log.addHandler(hdlr)
+
+debug = log.debug
+info = log.info
+warn = log.warn
+error = log.error
+exception = log.exception
 
 try:
     import psyco
     psyco.full()
-except:
-    print 'psyco not available'
 
-#import numpy
-#rand=numpy.random.rand
-#rint=numpy.random.randint
-#shuffle=numpy.random.shuffle
+except:
+    warn('psyco not available')
 
 import scipy
 
@@ -22,10 +32,6 @@ rand=scipy.random.rand
 rint=scipy.random.randint
 shuffle=scipy.random.shuffle
 exp=scipy.math.exp
-
-#import array
-#array=array.array
-#sum=numpy.sum
 
 class AnnealerProfile:
     def __init__(self,*args,**kargs):
@@ -49,26 +55,19 @@ class AnnealerProfile:
 class Annealer:
     def __init__(self,
             beginTemp=100,endTemp=1,
-            alpha=0.95,reps=200,
-            log='anneal.txt',**kargs):
+            alpha=0.95,reps=200
+            ,**kargs):
         """
         Solve a combinatorial problem using simulated annealing
 
         Args
         ----
-        beginTempemp - Initial annealing tempature
+        beginTemp - Initial annealing tempature
         endTemp - Final anealing tempature
         alpha - Cooling rate between temperature steps
         reps - Number of alternatives to attempt at each temperature step
 
-        log - Log file object
         """
-        ##TODO: use the python logger builtin
-
-##        import psyco
-##        psyco.full()
-
-        #self.problem=problem #kargs['problem'](**kargs)#['problemKArgs'])
 
         #set optional annealling routine
         self.solve=self.coolAfterReps
@@ -80,10 +79,9 @@ class Annealer:
 
         self.currentTemp=beginTemp
 
-        self.log = open(log,'w')
-        self.log.write('\n'.join(map(str,(self.beginTemp,self.endTemp,self.alpha,self.reps))))
-        self.log.write('\n')
-        self.log.flush()
+	h = ('Beginning Temp','Ending Temp','Alpha','Reps')
+	i = map(str,(self.beginTemp,self.endTemp,self.alpha,self.reps))
+        debug(', '.join([': '.join(p) for p in zip(h,i)]))
 
         self.stepping = False
         self.running = False
@@ -100,10 +98,7 @@ class Annealer:
         fmt=''
         for a in args:
             fmt+='%.4e  '
-        if log:
-            self.log.write(fmt % args+'\n')
-        else:
-            print fmt % args
+        debug(fmt % args)
 
     def start(self):
         """
@@ -115,7 +110,7 @@ class Annealer:
         while 1:
             msg = self.controlQueue.get()
 
-            print 'Control loop got: %s' % msg.type
+            debug('Control loop got: %s' % msg.type)
 
             if msg.type=='start':
                 problem = msg.data['problem']
@@ -131,7 +126,7 @@ class Annealer:
                 self.solve(problem)
 
             elif msg.type == 'exit':
-                print 'Exiting control loop'
+                debug('Exiting control loop')
                 break
 
     def _continue(self):
@@ -248,14 +243,11 @@ class Annealer:
         self.running = False
         self.stepping = False
 
-        print 'Annealling Done'
-        print 'Best Energy:',bE
-        print 'Total Reps:',reps
-        print 'Solution Time:',ts(et-st)
-
-        self.log.write(str(sol)+'\n')
-        self.log.write(str(bE)+'\n')
-        self.log.write(str(reps)+'\n')
+	info('Annealling Complete')
+	info('Solution: %s' % sol)
+	info('Energy: %.2f' % bE)
+	info('Total Reps: %d' % reps)
+	info('Solution Time: %s' % (ts(et-st),))
 
         ##TODO: report the distance matrix
 
@@ -574,10 +566,10 @@ def test():
             'annealer':'coolAfterReps',
             }
 
-    print 'Init GUI'
+    debug('Init GUI')
     myGui = gui.ThreadedGUI(w,h)
 
-    print 'Init solver'
+    debug('Init solver')
     solver = Annealer(**solverArgs)
 
 ##    problem = TSP(locations = randomLocations(numCities,w,h),
@@ -586,8 +578,9 @@ def test():
 ##            solutionAlgorithm='sequence_reverse')
 
     #gui.ControlMain(gui.GuiThread,gui.ThreadedGUI,AnnealerProfile,wArgs,w,h,50)
-    print 'Call main'
+    debug('Call main')
     ctl = gui.ControlMain(myGui,solver,TSP)
+    debug('Init Controller')
     ctl.mainLoop()
 
 if __name__=='__main__':
