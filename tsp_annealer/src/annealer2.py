@@ -19,19 +19,19 @@ warn = log.warn
 error = log.error
 exception = log.exception
 
-try:
-    import psyco
-    psyco.full()
+#try:
+#    import psyco
+#    psyco.full()
+#
+#except:
+#    warn('psyco not available')
 
-except:
-    warn('psyco not available')
+import numpy
 
-import scipy
-
-rand=scipy.random.rand
-rint=scipy.random.randint
-shuffle=scipy.random.shuffle
-exp=scipy.math.exp
+rand=numpy.random.rand
+rint=numpy.random.randint
+shuffle=numpy.random.shuffle
+exp=numpy.math.exp
 
 class AnnealerProfile:
     def __init__(self,*args,**kargs):
@@ -54,8 +54,8 @@ class AnnealerProfile:
 
 class Annealer:
     def __init__(self
-            ,beginTemp=100,endTemp=1
-            ,alpha=0.95,reps=200
+            ,begin_temp=100,end_temp=1
+            ,alpha=0.95,cycle_reps=200
             ,dwell=1.001
             ,**kargs):
         """
@@ -63,26 +63,26 @@ class Annealer:
 
         Args
         ----
-        beginTemp - Initial annealing tempature
-        endTemp - Final anealing tempature
+        begin_temp - Initial annealing tempature
+        end_temp - Final anealing tempature
         alpha - Cooling rate between temperature steps
-        reps - Number of alternatives to attempt at each temperature step
-        dwell - Rate to increase the number of reps at each temperature step
+        cycle_reps - Number of alternatives to attempt at each temperature step
+        dwell - Rate to increase the number of cycle_reps at each temperature step
         """
 
         #set optional annealling routine
         self.solve=self.coolAfterReps
 
-        self.beginTemp=beginTemp #beginning Temp
-        self.endTemp=max(endTemp,0.0004) #ending temp
-        self.alpha=alpha #cooling schedule
-        self.dwell=dwell #rate of temp step repetition increase
-        self.reps=reps #solutions to test per temp cycle
+        self.begin_temp=begin_temp #beginning Temp
+        self.end_temp=max(end_temp,0.0004) #ending temp
+        self.alpha=alpha #cooling rate
+        self.dwell=dwell #rate of cycle_reps increase at each temp step
+        self.cycle_reps=cycle_reps #initial solutions to test per temp cycle
 
-        self.currentTemp=beginTemp
+        self.currentTemp=begin_temp
 
-        h = ('Beginning Temp','Ending Temp','Alpha','Reps')
-        i = map(str,(self.beginTemp,self.endTemp,self.alpha,self.reps))
+        h = ('Beginning Temp','Ending Temp','Alpha','Cycle Reps')
+        i = map(str,(self.begin_temp,self.end_temp,self.alpha,self.cycle_reps))
         debug(', '.join([': '.join(p) for p in zip(h,i)]))
 
         self.stepping = False
@@ -100,6 +100,7 @@ class Annealer:
         fmt=''
         for a in args:
             fmt+='%.4e  '
+            
         debug(fmt % args)
 
     def start(self):
@@ -116,12 +117,12 @@ class Annealer:
 
             if msg.type=='start':
                 problem = msg.data['problem']
-                self.beginTemp = msg.data['beginTemp']
-                self.endTemp = msg.data['endTemp']
+                self.begin_temp = msg.data['begin_temp']
+                self.end_temp = msg.data['end_temp']
                 self.alpha = msg.data['alpha']
-                self.reps = msg.data['reps']
+                self.cycle_reps = msg.data['cycle_reps']
                 self.dwell = msg.data['dwell']
-                self.currentTemp = self.beginTemp
+                self.currentTemp = self.begin_temp
 
                 self.running=True
                 self.stepping=False
@@ -168,15 +169,15 @@ class Annealer:
             #print 'worker got unknown ctl %s' % ctl
             return True
 
-    def coolAfterReps(self,problem):
+    def coolAfterReps(self, problem):
         """
         SA algorithm with proportional cooling after max repetitions
         """
         #get the first solution
 
-        cS=problem.solution
-        cE=problem.fitness
-        bE=cE
+        cS = problem.solution #initial solution
+        cE = problem.fitness #initial energy
+        bE = cE #initial best energy
 
         sol=problem.elaborate()
         #self.statusQ.put((sol,bE,'%.1f (%.1f) %.3f' % (cE,bE,self.currentTemp),self.running))
@@ -186,21 +187,21 @@ class Annealer:
 
         #loop until temp is less than self.endT
         st=time.time()
-        reps=0
-        #loop until temperature is reduced to endTemp
+        total_reps=0
+        #loop until temperature is reduced to end_temp
         while self._continue():
             i=0
-            #self.reps repetitions at current temperatur
+            #self.cycle_reps repetitions at current temperatur
             while 1:
-                if i>=self.reps: break
+                if i>= self.cycle_reps: break
 
-                #get a new problem solution to test
+                #get a new solution to test
                 tE=problem.next()
 
                 #Keep the new solution if it is the same or better
                 #   than the current solution
                 if tE<=cE:
-                    self.postMsg(self.currentTemp,i,cE,tE,bE,self.reps)
+                    self.postMsg(self.currentTemp,i,cE,tE,bE,self.cycle_reps)
                     best=False
                     cE=tE
                     #if this is the best so far, upgrade it
@@ -215,34 +216,35 @@ class Annealer:
                 #if test is higher energy, select it by probability proportional to T
                 else:
                     #calc the probability of selecting a less optimal solution
-                    px=(cE-tE)#/ec*100 #difference in the two costs
-                    p=exp(px/self.currentTemp) #Boltzman probability of acceptance
-                    r=rand() #random 0-1
-                    if r<=p: #probability is greater than some random value
-                        self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r,self.reps)
+                    px  = cE-tE #difference in the two costs
+                    p = exp(px/self.currentTemp) #Boltzman probability of acceptance
+                    r = rand() #random 0-1
+                    if r <= p: #probability is greater than some random value
+                        self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r,self.cycle_reps)
                         problem.keep()
-                        cE=tE
+                        cE = tE
 
                 i += 1
-            reps += i
+                
+            total_reps += i
 
             #post the current solution
             sol = problem.elaborate()
-            msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,reps,True)
+            msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,total_reps,True)
             self.statusQueue.put(msg)
 
             #step down the temperature by alpha
             self.currentTemp *= self.alpha
-            #increase the number of reps
-            self.reps *= self.dwell
+            #increase the number of cycle_reps
+            self.cycle_reps *= self.dwell
             #exit the loop if endT has been reached
-            if self.currentTemp<self.endTemp:break
+            if self.currentTemp<self.end_temp:break
 
         et=time.time()
 
         #send off the final solution
         sol = problem.elaborate(True)
-        msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,reps,False)
+        msg = WorkerMessage(sol,cE,bE,self.currentTemp,self.dwell,total_reps,False)
         self.statusQueue.put(msg)
 
         self.running = False
@@ -251,7 +253,7 @@ class Annealer:
         info('Annealling Complete')
         info('Solution: %s' % sol)
         info('Energy: %.2f' % bE)
-        info('Total Reps: %d' % reps)
+        info('Total Reps: %d' % total_reps)
         info('Solution Time: %s' % (ts(et-st),))
 
         ##TODO: report the distance matrix
@@ -276,7 +278,7 @@ class TSP:
     def __init__(self,
             locations={},targetLength=0,
             writeDistMatrix=True,
-            solutionAlgorithm='sequence_reverse',
+            solutionAlgorithm='edge_reverse',
             **kargs):
         """
         Locations - a dictionary of locations coordinates {id:(x,y),}
@@ -296,7 +298,8 @@ class TSP:
                 'sequence_reverse':self._genSolution_seqrev,
                 'single_position':self._genSolution_1PositionChange,
                 'swap':self._genSolution_swap,
-                'sequence_random':self._genSolution_seqrand
+                'sequence_random':self._genSolution_seqrand,
+                'edge_reverse':self._genSolution_reverse_edge
                 }
 
         self.locations=locations
@@ -381,7 +384,7 @@ class TSP:
         can be found either forward or backward.
         """
         l=len(self.locations)
-        dm=scipy.zeros((l,l))
+        dm=numpy.zeros((l,l))
         for i in xrange(0,l):
             for j in xrange(0,l):
                 dx=self.locations[i][0]-self.locations[j][0]
@@ -449,6 +452,25 @@ class TSP:
             self.testFitness=self._calcFitness(self.testLength)
             yield self.testFitness
 
+    def _genSolution_reverse_edge(self):
+        #l = self.numLocs - 1
+        while 1:
+            ts = self.solution[:]
+            l = len(ts)-1
+            
+            i = rint(0,l)
+            j = i+1
+            if j>l:
+                j=0
+            
+            ts[i],ts[j] = ts[j],ts[i]
+
+            self.testSolution = ts
+            l = self._calcLength(ts)
+            self.testLength = l
+            self.testFitness = self._calcFitness(l)
+            yield self.testFitness
+            
     def _genSolution_swap(self):
         while 1:
             self.testSolution=self.solution[:]
@@ -537,8 +559,8 @@ def randomLocations(numLocs,maxX,maxY,minX=0,minY=0,seed=1):
     Return an array of randomly distributed coordinate pairs
     within
     """
-    scipy.random.seed(seed)
-    locations=scipy.zeros((numLocs,2))
+    numpy.random.seed(seed)
+    locations=numpy.zeros((numLocs,2))
 
     for loc in locations:
         loc[0]=rint(minX,maxX)
@@ -561,22 +583,21 @@ def test():
     import os
     #import pstats
 
-    numCities=31
     w=320
     h=240
 
-    solverArgs={ 'beginTemp':800,
-            'endTemp':1,
+    solver_args={ 'begin_temp':800,
+            'end_temp':1,
             'alpha':0.975,
             'reps':500,
-            'annealer':'coolAfterReps',
+            'dwell':1.0,
             }
 
     debug('Init GUI')
-    myGui = gui.ThreadedGUI(w,h)
+    my_gui = gui.ThreadedGUI(w,h)
 
     debug('Init solver')
-    solver = Annealer(**solverArgs)
+    solver = Annealer(**solver_args)
 
 ##    problem = TSP(locations = randomLocations(numCities,w,h),
 ##            targetLength = 0.0,
@@ -585,7 +606,7 @@ def test():
 
     #gui.ControlMain(gui.GuiThread,gui.ThreadedGUI,AnnealerProfile,wArgs,w,h,50)
     debug('Call main')
-    ctl = gui.ControlMain(myGui,solver,TSP)
+    ctl = gui.ControlMain(my_gui,solver,TSP)
     debug('Init Controller')
     ctl.mainLoop()
 

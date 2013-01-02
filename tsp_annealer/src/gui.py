@@ -61,7 +61,7 @@ class ThreadedGUI(tk.Tk):
         self.filePath = tk.StringVar()
 
         self.startTemp = tk.DoubleVar()
-        self.endTemp = tk.DoubleVar()
+        self.end_temp = tk.DoubleVar()
         self.alpha = tk.DoubleVar()
         self.dwell = tk.DoubleVar()
         self.reps = tk.IntVar()
@@ -69,10 +69,10 @@ class ThreadedGUI(tk.Tk):
         self.randomSeed = tk.DoubleVar()
 
         ##TODO: defaults as args?
-        self.startTemp.set(800.0)
-        self.endTemp.set(1.0)
+        self.startTemp.set(1000.0)
+        self.end_temp.set(1.0)
         self.alpha.set(0.975)
-        self.dwell.set(1.01)
+        self.dwell.set(1.0)
         self.reps.set(300)
         self.target.set(0.0)
         self.randomSeed.set(1.0)
@@ -185,12 +185,12 @@ class ThreadedGUI(tk.Tk):
                 textvariable=self.startTemp,width=6)
         self.entStartTemp.grid(row=0,column=1,sticky='sew')
 
-        lblEndTemp = tk.Label(self.annealingOptionsFrame,text='End Temp:',
+        lblend_temp = tk.Label(self.annealingOptionsFrame,text='End Temp:',
                 anchor='w')
-        lblEndTemp.grid(row=1,column=0,sticky='new')
-        self.entEndTemp = tk.Entry(self.annealingOptionsFrame,
-                textvariable=self.endTemp,width=6)
-        self.entEndTemp.grid(row=1,column=1,sticky='sew')
+        lblend_temp.grid(row=1,column=0,sticky='new')
+        self.entend_temp = tk.Entry(self.annealingOptionsFrame,
+                textvariable=self.end_temp,width=6)
+        self.entend_temp.grid(row=1,column=1,sticky='sew')
 
         lblReps = tk.Label(self.annealingOptionsFrame,text='Reps:',
                 anchor='w')
@@ -342,11 +342,11 @@ class ThreadedGUI(tk.Tk):
 
     def click_start(self):
         data = {
-                'beginTemp':self.startTemp.get()
-                ,'endTemp':self.endTemp.get()
+                'begin_temp':self.startTemp.get()
+                ,'end_temp':self.end_temp.get()
                 ,'alpha':self.alpha.get()
                 ,'dwell':self.dwell.get()
-                ,'reps':self.reps.get()
+                ,'cycle_reps':self.reps.get()
                 ,'points':self.numCities.get()
                 ,'target':self.target.get()
                 }
@@ -681,9 +681,17 @@ class ControlMain:
 
                 self.worker.controlQueue.put(msg)
 
+##                #clear out the queue after each re-draw
+##                while not self.worker.controlQueue.empty():
+##                    print 'q not empty'
+##                    try:
+##                        self.worker.controlQueue.get_nowait()
+##                    except:
+##                        pass
+                
             except Queue.Empty:
                 pass
-
+            
             #wait and loop recursively
             time.sleep(.001)
 
