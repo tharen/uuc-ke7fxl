@@ -50,6 +50,7 @@ class OptimalCutter:
 ##        self.cuts = self.__readCutsFile(self.cutsFileName)
 
     def __getRandom(self):
+        #localize a set of random numbers
         while 1:
             rand=random.random(1000000)
             for r in rand:
@@ -446,7 +447,12 @@ class OptimalCutter:
             prodGroup = int(x[5])
             prodDesc = x[6].strip()
             cutLength = float(x[7])
-
+            trimLength = float(x[8])
+            optimize = bool(int(x[9]))
+            
+            if not optimize:
+                continue
+            
             cut = self.Cut(cutId,itemId,itemDesc,pieceIdx,
                     pieceDesc,prodGroup,prodDesc,cutLength,
                     self.trim)
