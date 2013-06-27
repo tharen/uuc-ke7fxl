@@ -79,7 +79,7 @@ def main(raster_path,dsn,sql,attr,stats_path,wkspc):
         if f%100.0==0.0:
             print(f)
 #            print stats
-
+    
         if f>=99: break
 
 #        print grid_values
@@ -87,7 +87,7 @@ def main(raster_path,dsn,sql,attr,stats_path,wkspc):
 
     print('Computed stats for {:<d} zones'.format(f+1))
     return stats_path
-
+    
 def test():
     r = '/mnt/shared_partition/shared/data/landsat/LC80470282013159LGN00/LC80470282013159LGN00_B4.TIF'
     d = '/mnt/shared_partition/shared/data/SLI/TL2010ROOTSfiles'
@@ -95,12 +95,12 @@ def test():
     a = 'STD_ID'
     f = '/mnt/shared_partition/shared/data/SLI/TL2010ROOTSfiles/zone_stats.txt'
     w = '/mnt/shared_partition/shared/data/SLI/TL2010ROOTSfiles'
-
+    
     main(r,d,s,a,f,w)
-
+    
 if __name__=='__main__':
     if '--test' in sys.argv:
         test()
-
+        
     else:
         main(*sys.argv[1:])
