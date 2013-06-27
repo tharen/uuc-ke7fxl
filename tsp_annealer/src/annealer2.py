@@ -28,9 +28,9 @@ exception = log.exception
 
 import numpy
 
-rand=numpy.random.rand
-rint=numpy.random.randint
-shuffle=numpy.random.shuffle
+rand = numpy.random.rand
+rint = numpy.random.randint
+shuffle = numpy.random.shuffle
 exp=numpy.math.exp
 
 class AnnealerProfile:
@@ -169,7 +169,7 @@ class Annealer:
             #print 'worker got unknown ctl %s' % ctl
             return True
 
-    def coolAfterReps(self, problem):
+    def coolAfterReps(self,problem):
         """
         SA algorithm with proportional cooling after max repetitions
         """
@@ -217,12 +217,12 @@ class Annealer:
                 else:
                     #calc the probability of selecting a less optimal solution
                     px  = cE-tE #difference in the two costs
-                    p = exp(px/self.currentTemp) #Boltzman probability of acceptance
-                    r = rand() #random 0-1
-                    if r <= p: #probability is greater than some random value
+                    p=exp(px/self.currentTemp) #Boltzman probability of acceptance
+                    r=rand() #random 0-1
+                    if r<=p: #probability is greater than some random value
                         self.postMsg(self.currentTemp,i,cE,tE,bE,px,p,r,self.cycle_reps)
                         problem.keep()
-                        cE = tE
+                        cE=tE
 
                 i += 1
                 
