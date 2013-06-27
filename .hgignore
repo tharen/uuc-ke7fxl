@@ -1,5 +1,9 @@
 syntax: glob
 
+#ignore Python byte code and emacs temp files
 *.pyc
+*.pyo
 *.py~
+
 *~
+*.bak
