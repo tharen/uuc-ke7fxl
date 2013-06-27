@@ -1,0 +1,134 @@
+Cut_ID,Piece_ID,Piece_Desc,Material_Desc,Dim.
+1,1,Kitchen Window,1,Stool,1,H-1x5,41.625,0,0
+2,1,Kitchen Window,2,Top Jam,2,H-1x3,36.25,0,0
+3,1,Kitchen Window,3,Side Jam,2,H-1x3,34.5,0,0
+4,1,Kitchen Window,4,Side Jam,2,H-1x3,34.5,0,0
+5,1,Kitchen Window,5,Top Casing,2,H-1x3,40.125,0,0
+6,1,Kitchen Window,6,Side Casing,2,H-1x3,34.875,0,0
+7,1,Kitchen Window,7,Side Casing,2,H-1x3,34.875,0,0
+8,1,Kitchen Window,8,Apron,2,H-1x3,40.125,0,0
+9,1,Kitchen Window,9,Fillet,3,H-1x3/8,40.125,0,0
+#N/A
+11,2,Living Rm Door 1,1,Top Jam,1,H-1x5,32.5,0,0
+12,2,Living Rm Door 1,2,Side Jam,1,H-1x5,83.75,0,0
+13,2,Living Rm Door 1,3,Side Jam,1,H-1x5,83.75,0,0
+14,2,Living Rm Door 1,4,Top Casing,2,H-1x3,37.375,0,0
+15,2,Living Rm Door 1,5,Top Casing,2,H-1x3,37.375,0,0
+16,2,Living Rm Door 1,6,Side Casing,2,H-1x3,83.9375,0,0
+17,2,Living Rm Door 1,7,Side Casing,2,H-1x3,83.9375,0,0
+18,2,Living Rm Door 1,8,Side Casing,2,H-1x3,83.9375,0,0
+19,2,Living Rm Door 1,9,Side Casing,2,H-1x3,83.9375,0,0
+20,2,Living Rm Door 1,10,Fillet,3,H-1x3/8,37.375,0,0
+21,2,Living Rm Door 1,11,Fillet,3,H-1x3/8,37.375,0,0
+#N/A
+23,3,Office,1,Stool,1,H-1x5,76.875,0,0
+24,3,Office,2,Top Jam,2,H-1x3,71.5,0,0
+25,3,Office,3,Side Jam,2,H-1x3,34,0,0
+26,3,Office,4,Side Jam,2,H-1x3,34,0,0
+27,3,Office,5,Top Casing,2,H-1x3,75.375,0,0
+28,3,Office,6,Side Casing,2,H-1x3,34.375,0,0
+29,3,Office,7,Side Casing,2,H-1x3,34.375,0,0
+30,3,Office,8,Apron,2,H-1x3,75.375,0,0
+31,3,Office,9,Fillet,3,H-1x3/8,75.375,0,0
+#N/A
+33,4,Guest Room,1,Stool,1,H-1x5,76.875,0,0
+34,4,Guest Room,2,Top Jam,2,H-1x3,71.5,0,0
+35,4,Guest Room,3,Side Jam,2,H-1x3,34,0,0
+36,4,Guest Room,4,Side Jam,2,H-1x3,34,0,0
+37,4,Guest Room,5,Top Casing,2,H-1x3,75.375,0,0
+38,4,Guest Room,6,Side Casing,2,H-1x3,34.375,0,0
+39,4,Guest Room,7,Side Casing,2,H-1x3,34.375,0,0
+40,4,Guest Room,8,Apron,2,H-1x3,75.375,0,0
+41,4,Guest Room,9,Fillet,3,H-1x3/8,75.375,0,0
+#N/A
+43,5,Master Bed,1,Stool,1,H-1x5,76.875,0,0
+44,5,Master Bed,2,Top Jam,2,H-1x3,71.5,0,0
+45,5,Master Bed,3,Side Jam,2,H-1x3,34,0,0
+46,5,Master Bed,4,Side Jam,2,H-1x3,34,0,0
+47,5,Master Bed,5,Top Casing,2,H-1x3,75.375,0,0
+48,5,Master Bed,6,Side Casing,2,H-1x3,34.375,0,0
+49,5,Master Bed,7,Side Casing,2,H-1x3,34.375,0,0
+50,5,Master Bed,8,Apron,2,H-1x3,75.375,0,0
+51,5,Master Bed,9,Fillet,3,H-1x3/8,75.375,0,0
+#N/A
+53,6,Master Bath,1,Stool,1,H-1x5,40.875,0,0
+54,6,Master Bath,2,Top Jam,2,H-1x3,35.5,0,0
+55,6,Master Bath,3,Side Jam,2,H-1x3,34,0,0
+56,6,Master Bath,4,Side Jam,2,H-1x3,34,0,0
+57,6,Master Bath,5,Top Casing,2,H-1x3,39.375,0,0
+58,6,Master Bath,6,Side Casing,2,H-1x3,34.375,0,0
+59,6,Master Bath,7,Side Casing,2,H-1x3,34.375,0,0
+60,6,Master Bath,8,Apron,2,H-1x3,39.375,0,0
+61,6,Master Bath,9,Fillet,3,H-1x3/8,39.375,0,0
+#N/A
+63,7,Living Rm Front,1,Stool,1,H-1x5,100.875,0,0
+64,7,Living Rm Front,2,Top Jam,2,H-1x3,95.5,0,0
+65,7,Living Rm Front,3,Side Jam,2,H-1x3,58,0,0
+66,7,Living Rm Front,4,Side Jam,2,H-1x3,58,0,0
+67,7,Living Rm Front,5,Top Casing,2,H-1x3,99.375,0,0
+68,7,Living Rm Front,6,Side Casing,2,H-1x3,58.375,0,0
+69,7,Living Rm Front,7,Side Casing,2,H-1x3,58.375,0,0
+70,7,Living Rm Front,8,Apron,2,H-1x3,99.375,0,0
+71,7,Living Rm Front,9,Fillet,3,H-1x3/8,99.375,0,0
+#N/A
+73,8,Living Rm Side 1,1,Stool,1,H-1x5,40.875,0,0
+74,8,Living Rm Side 1,2,Top Jam,2,H-1x3,35.5,0,0
+75,8,Living Rm Side 1,3,Side Jam,2,H-1x3,46,0,0
+76,8,Living Rm Side 1,4,Side Jam,2,H-1x3,46,0,0
+77,8,Living Rm Side 1,5,Top Casing,2,H-1x3,39.375,0,0
+78,8,Living Rm Side 1,6,Side Casing,2,H-1x3,46.375,0,0
+79,8,Living Rm Side 1,7,Side Casing,2,H-1x3,46.375,0,0
+80,8,Living Rm Side 1,8,Apron,2,H-1x3,39.375,0,0
+81,8,Living Rm Side 1,9,Fillet,3,H-1x3/8,39.375,0,0
+#N/A
+83,9,Living Rm Side 2,1,Stool,1,H-1x5,40.875,0,0
+84,9,Living Rm Side 2,2,Top Jam,2,H-1x3,35.5,0,0
+85,9,Living Rm Side 2,3,Side Jam,2,H-1x3,46,0,0
+86,9,Living Rm Side 2,4,Side Jam,2,H-1x3,46,0,0
+87,9,Living Rm Side 2,5,Top Casing,2,H-1x3,39.375,0,0
+88,9,Living Rm Side 2,6,Side Casing,2,H-1x3,46.375,0,0
+89,9,Living Rm Side 2,7,Side Casing,2,H-1x3,46.375,0,0
+90,9,Living Rm Side 2,8,Apron,2,H-1x3,39.375,0,0
+91,9,Living Rm Side 2,9,Fillet,3,H-1x3/8,39.375,0,0
+#N/A
+93,10,Living Rm Door 2,1,Top Jam,1,H-1x5,53,0,0
+94,10,Living Rm Door 2,2,Side Jam,1,H-1x5,80.5,0,0
+95,10,Living Rm Door 2,3,Side Jam,1,H-1x5,80.5,0,0
+96,10,Living Rm Door 2,4,Top Casing,2,H-1x3,57.875,0,0
+97,10,Living Rm Door 2,5,Top Casing,2,H-1x3,57.875,0,0
+98,10,Living Rm Door 2,6,Side Casing,2,H-1x3,80.6875,0,0
+99,10,Living Rm Door 2,7,Side Casing,2,H-1x3,80.6875,0,0
+100,10,Living Rm Door 2,8,Side Casing,2,H-1x3,80.6875,0,0
+101,10,Living Rm Door 2,9,Side Casing,2,H-1x3,80.6875,0,0
+102,10,Living Rm Door 2,10,Fillet,3,H-1x3/8,57.875,0,0
+103,10,Living Rm Door 2,11,Fillet,3,H-1x3/8,57.875,0,0
+#N/A
+105,11,Living Rm Base,1,LR1,4,H-7/16x4,124.5,0,1
+106,11,Living Rm Base,2,LR2,4,H-7/16x4,46,0,1
+107,11,Living Rm Base,3,LR3,4,H-7/16x4,160.5,0,1
+108,11,Living Rm Base,4,LR4,4,H-7/16x4,84,0,1
+109,11,Living Rm Base,5,LR5,4,H-7/16x4,19,0,1
+110,11,Living Rm Base,6,LR6,4,H-7/16x4,65,0,1
+111,11,Living Rm Base,7,LR7,4,H-7/16x4,19,0,1
+112,11,Living Rm Base,8,LR8,4,H-7/16x4,79.5,0,1
+113,11,Living Rm Base,9,LR9,4,H-7/16x4,124,0,1
+114,11,Living Rm Base,10,LR10,4,H-7/16x4,0.1,0,1
+115,11,Living Rm Base,11,LR11,4,H-7/16x4,0.1,0,1
+#N/A
+117,12,Foyer & Front Hall,1,FY1,4,H-7/16x4,15.5,0,1
+118,12,Foyer & Front Hall,2,FY2,4,H-7/16x4,9.75,0,1
+119,12,Foyer & Front Hall,3,FY3,4,H-7/16x4,129,0,1
+120,12,Foyer & Front Hall,4,FY4,4,H-7/16x4,4,0,1
+121,12,Foyer & Front Hall,5,FY5,4,H-7/16x4,55,0,1
+122,12,Foyer & Front Hall,6,FY6,4,H-7/16x4,39.5,0,1
+123,12,Foyer & Front Hall,7,FY7,4,H-7/16x4,33,0,1
+124,12,Foyer & Front Hall,8,FY8,4,H-7/16x4,73.5,0,1
+125,12,Foyer & Front Hall,9,FY9,4,H-7/16x4,15.5,0,1
+#N/A
+127,13,Back Hall,1,BH1,4,H-7/16x4,86.5,0,1
+128,13,Back Hall,2,BH2,4,H-7/16x4,4.5,0,1
+129,13,Back Hall,3,BH3,4,H-7/16x4,5.5,0,1
+130,13,Back Hall,4,BH4,4,H-7/16x4,35.75,0,1
+131,13,Back Hall,5,BH5,4,H-7/16x4,37.75,0,1
+132,13,Back Hall,6,BH6,4,H-7/16x4,50,0,1
+133,13,Back Hall,7,BH7,4,H-7/16x4,44,0,1

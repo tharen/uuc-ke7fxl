@@ -1,0 +1,17 @@
+application: uuc-ke7fxl
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /simanneal/*
+  script: simanneal.py
+
+- url: /ip/*
+  script: ip.py
+
+- url: /.*
+  script: simanneal.py
+
+builtins:
+- datastore_admin: on
