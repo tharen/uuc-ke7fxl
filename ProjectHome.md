@@ -1,0 +1,1 @@
+This is a repository of various projects I work on from time to time, or once.  These are generally the result of some harebrained idea I had.  For the most part they are here for me to practice and develop my skills.  If you find any of it interesting or otherwise useful I would be very curious to know.
